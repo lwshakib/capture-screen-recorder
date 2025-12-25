@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { CHAT_ROLE } from "../../../../generated/prisma/enums";
+import { CHAT_ROLE } from "@/generated/prisma/enums";
 import { streamText } from "@/llm/streamText";
 
 export async function GET(req: Request) {

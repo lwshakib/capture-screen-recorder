@@ -12,3 +12,136 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum VIDEO_PRIVACY {
+  PRIVATE
+  PUBLIC
+}
+
+enum CHAT_ROLE {
+user
+assistant
+}
+
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  videos        Video[]
+  chatHistories chatHistory[]
+
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+
+model VerificationCode {
+  id         String   @id @default(uuid())
+  code       String @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verificationCode")
+}
+
+
+
+model Video {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  description String?
+  privacy     VIDEO_PRIVACY   @default(PRIVATE)
+  transcript  String?
+  thumbnail   String?
+  chapters   Json?
+  chapters_url String?
+  subtitles_url String? 
+  duration    Int?
+  cloudinaryPublicId String
+  url         String
+  m3u8Url     String?
+  byteSize    Int?
+  format      String?
+  width       Int?
+  height      Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chatHistories chatHistory[]
+
+  @@index([userId])
+  @@map("video")
+}
+
+model chatHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId    String
+  video      Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  role       CHAT_ROLE   @default(user)
+  parts    Json[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("chatHistory")
+}

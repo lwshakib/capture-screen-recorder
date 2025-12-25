@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { VIDEO_PRIVACY } from "../../../../../generated/prisma/enums";
+import { VIDEO_PRIVACY } from "@/generated/prisma/enums";
 import { inngest } from "@/inngest/client";
 
 export async function OPTIONS(req: Request) {
