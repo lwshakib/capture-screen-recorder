@@ -42,6 +42,18 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  @keyframes caret-capture {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+  --animate-caret-capture: caret-capture 1.25s ease-out infinite;
 }
 
 :root {
@@ -118,6 +130,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-transparent text-foreground;
   }
+}
+
+.draggable {
+  -webkit-app-region: drag;
+}
+
+.non-draggable {
+  -webkit-app-region: no-drag;
 }
