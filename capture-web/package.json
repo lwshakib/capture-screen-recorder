@@ -7,11 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-     "postinstall": "bun x prisma generate",
-    "migrate:dev": "bun x prisma generate && bun x prisma migrate dev --name init",
-    "migrate:prod": "bun x prisma migrate deploy",
-    "studio": "bun x prisma studio",
-    "migrate:reset": "bun x prisma migrate reset"
+    "postinstall": "bun x prisma generate",
+    "db:generate": "bun x prisma generate",
+    "db:migrate": "bun x prisma generate && bun x prisma migrate dev --name init",
+    "db:studio": "bun x prisma studio",
+    "db:reset": "bun x prisma migrate reset"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -43,6 +43,7 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
