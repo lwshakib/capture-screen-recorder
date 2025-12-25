@@ -1,0 +1,16 @@
+procs:
+  inngest:
+    shell: "npx --ignore-scripts=false inngest-cli@1.15.1 dev"
+    autoRestart: true
+    
+  capture-web:
+    shell: "cd capture-web && bun dev"
+    autoRestart: true
+
+  # capture-desktop:
+  #   shell: "cd capture-desktop && bun dev"
+  #   autoRestart: true
+
+  # capture-extension:
+  #   shell: "cd capture-extension && bun dev"
+  #   autoRestart: true
