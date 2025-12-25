@@ -7,9 +7,9 @@ procs:
     shell: "cd capture-web && bun dev"
     autoRestart: true
 
-  # capture-desktop:
-  #   shell: "cd capture-desktop && bun dev"
-  #   autoRestart: true
+  capture-desktop:
+    shell: "cd capture-desktop && bun dev"
+    autoRestart: true
 
   # capture-extension:
   #   shell: "cd capture-extension && bun dev"
