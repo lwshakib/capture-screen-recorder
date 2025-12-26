@@ -1,14 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './views/App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./views/App.tsx";
+import { logger } from "../utils/logger";
 
-console.log('[CRXJS] Hello world from content script!')
+logger.debug("Content script loaded");
 
-const container = document.createElement('div')
-container.id = 'crxjs-app'
-document.body.appendChild(container)
+const container = document.createElement("div");
+container.id = "__capture_screen_recorder";
+document.body.appendChild(container);
 createRoot(container).render(
   <StrictMode>
     <App />
-  </StrictMode>,
-)
+  </StrictMode>
+);

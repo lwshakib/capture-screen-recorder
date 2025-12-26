@@ -1,0 +1,397 @@
+.resolution-widget {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 300px;
+  /* min-width: 300px; */
+  height: auto;
+  background: rgba(20, 20, 20, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  z-index: 5001;
+}
+
+.resolution-widget--light {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.resolution-widget__header {
+  padding: 10px 12px;
+  font-weight: 600;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0)
+  );
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: move;
+  user-select: none;
+}
+
+.resolution-widget--light .resolution-widget__header {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.06),
+    rgba(15, 23, 42, 0)
+  );
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
+.resolution-widget__body {
+  padding: 12px;
+}
+
+.resolution-widget__auth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.resolution-widget__auth-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.resolution-widget__btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.resolution-widget__btn-primary {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.resolution-widget--light .resolution-widget__btn {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.resolution-widget__label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.resolution-widget--light .resolution-widget__label {
+  color: #0f172a;
+  opacity: 0.85;
+}
+
+.resolution-widget__radios {
+  display: grid;
+  gap: 6px;
+}
+
+.resolution-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.resolution-widget--light .resolution-radio {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.resolution-radio input[type="radio"] {
+  width: 14px;
+  height: 14px;
+}
+
+.resolution-radio--checked {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.resolution-widget--light .resolution-radio--checked {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.resolution-widget__hint {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.resolution-widget--light .resolution-widget__hint {
+  color: #334155;
+  opacity: 0.9;
+}
+
+.resolution-widget__theme-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+
+.resolution-widget--light .resolution-widget__theme-btn {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* User profile section styles */
+.resolution-widget__user-profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.resolution-widget--light .resolution-widget__user-profile {
+  border-top-color: rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.resolution-widget__user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resolution-widget__user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.resolution-widget--light .resolution-widget__user-avatar {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.resolution-widget__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resolution-widget__username {
+  font-size: 12px;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.9;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resolution-widget__logout-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resolution-widget__logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.resolution-widget--light .resolution-widget__logout-btn {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.resolution-widget--light .resolution-widget__logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Skeleton UI Styles */
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-button {
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200px 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-button--primary {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.2) 25%,
+    rgba(59, 130, 246, 0.3) 50%,
+    rgba(59, 130, 246, 0.2) 75%
+  );
+}
+
+.resolution-widget--light .skeleton-button {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.1) 25%,
+    rgba(15, 23, 42, 0.2) 50%,
+    rgba(15, 23, 42, 0.1) 75%
+  );
+}
+
+.resolution-widget--light .skeleton-button--primary {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.15) 25%,
+    rgba(59, 130, 246, 0.25) 50%,
+    rgba(59, 130, 246, 0.15) 75%
+  );
+}
+
+.skeleton-section {
+  margin-bottom: 16px;
+}
+
+.skeleton-label {
+  height: 12px;
+  width: 120px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-label {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.skeleton-radios {
+  display: grid;
+  gap: 6px;
+}
+
+.skeleton-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.resolution-widget--light .skeleton-radio {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.skeleton-radio-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-radio-dot {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.skeleton-radio-text {
+  height: 12px;
+  width: 80px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-radio-text {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.skeleton-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-avatar {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.skeleton-username {
+  height: 12px;
+  width: 80px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-username {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.skeleton-logout-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.resolution-widget--light .skeleton-logout-btn {
+  background: rgba(15, 23, 42, 0.1);
+}

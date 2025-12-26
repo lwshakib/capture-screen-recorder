@@ -11,6 +11,6 @@ procs:
     shell: "cd capture-desktop && bun dev"
     autoRestart: true
 
-  # capture-extension:
-  #   shell: "cd capture-extension && bun dev"
-  #   autoRestart: true
+  capture-extension:
+    shell: "cd capture-extension && bun dev"
+    autoRestart: true

@@ -1,0 +1,84 @@
+.cs-container {
+  position: relative;
+}
+
+.cs-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.cs-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.cs-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cs-trigger:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.cs-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-caret {
+  transition: transform 0.15s ease;
+}
+
+.cs-caret.cs-open {
+  transform: rotate(180deg);
+}
+
+.cs-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: rgba(24, 24, 27, 0.98);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px;
+  max-height: 240px;
+  overflow: auto;
+  z-index: 5002;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.cs-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cs-item:hover,
+.cs-item:focus {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.cs-item.cs-selected {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.cs-item-check {
+  opacity: 0.9;
+}

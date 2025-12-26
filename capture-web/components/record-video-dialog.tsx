@@ -61,9 +61,7 @@ export function RecordVideoDialog({
   const [error, setError] = useState<string | null>(null);
   const [showWebcam, setShowWebcam] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(
-    null
-  );
+  const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -249,11 +247,12 @@ export function RecordVideoDialog({
 
       combinedStreamRef.current = combined;
 
-      const mimeType = [
-        "video/webm;codecs=vp9,opus",
-        "video/webm;codecs=vp8,opus",
-        "video/webm",
-      ].find((t) => MediaRecorder.isTypeSupported(t)) || "";
+      const mimeType =
+        [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm",
+        ].find((t) => MediaRecorder.isTypeSupported(t)) || "";
 
       const recorder = new MediaRecorder(
         combined,
@@ -344,7 +343,7 @@ export function RecordVideoDialog({
       const url = URL.createObjectURL(recordedVideoBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `blink-recording-${Date.now()}.webm`;
+      a.download = `capture-recording-${Date.now()}.webm`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -365,7 +364,7 @@ export function RecordVideoDialog({
       formData.append(
         "file",
         recordedVideoBlob,
-        `blink-recording-${Date.now()}.webm`
+        `capture-recording-${Date.now()}.webm`
       );
       formData.append("api_key", signature.apiKey);
       formData.append("timestamp", signature.timestamp);
@@ -385,8 +384,8 @@ export function RecordVideoDialog({
 
       toast.info("Creating video record...");
       const videoData = {
-        name: response.original_filename || `blink-recording-${Date.now()}`,
-        description: "Recording from Blink",
+        name: response.original_filename || `capture-recording-${Date.now()}`,
+        description: "Recording from Capture",
         videoData: response,
       };
 
@@ -396,7 +395,9 @@ export function RecordVideoDialog({
         addVideo(videoResponse.data.newVideo);
         setUploadedVideoId(videoResponse.data.newVideo.id);
         setUploadSuccess(true);
-        toast.success("Video uploaded successfully! Processing will begin shortly.");
+        toast.success(
+          "Video uploaded successfully! Processing will begin shortly."
+        );
 
         // Close dialog after a short delay
         setTimeout(() => {
@@ -549,7 +550,9 @@ export function RecordVideoDialog({
                     Stop
                   </Button>
                   <Button
-                    onClick={state === "paused" ? resumeRecording : pauseRecording}
+                    onClick={
+                      state === "paused" ? resumeRecording : pauseRecording
+                    }
                     variant="outline"
                     size="lg"
                     className="flex items-center gap-2"
@@ -583,7 +586,7 @@ export function RecordVideoDialog({
       {showPreview && recordedVideoUrl && (
         <Dialog open={showPreview} onOpenChange={closePreview}>
           <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
-            <DialogHeader className="flex-shrink-0">
+            <DialogHeader className="shrink-0">
               <DialogTitle>
                 {uploadSuccess
                   ? "Upload Complete!"
@@ -633,7 +636,7 @@ export function RecordVideoDialog({
             </div>
 
             {!uploadSuccess && !isUploading && (
-              <div className="flex items-center gap-3 pt-4 border-t flex-shrink-0">
+              <div className="flex items-center gap-3 pt-4 border-t shrink-0">
                 <Button
                   variant="outline"
                   onClick={downloadVideo}
@@ -659,4 +662,3 @@ export function RecordVideoDialog({
     </>
   );
 }
-

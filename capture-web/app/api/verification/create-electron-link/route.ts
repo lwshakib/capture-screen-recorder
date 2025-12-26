@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         redirectUrl:
-          process.env.NEXT_PUBLIC_WEB_URL +
+          process.env.NEXT_PUBLIC_BASE_URL +
           `/electron/verify?value=${verification.code}`,
       },
       {

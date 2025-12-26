@@ -1,5 +1,7 @@
 {
   "name": "capture-extension",
+  "description": "Chrome extension for Capture Screen Recorder - AI-powered screen recording with webcam integration, multiple resolutions, and instant cloud upload",
+  "displayName": "Capture Screen Recorder",
   "type": "module",
   "version": "1.0.0",
   "private": true,
@@ -9,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.13.2",
+    "lucide-react": "^0.562.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
