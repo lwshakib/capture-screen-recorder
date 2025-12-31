@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Capture Web 🌐
 
-## Getting Started
+**Capture Web** is the central management and hosting platform for the Capture Screen Recorder ecosystem. It provides a secure environment for storing, managing, and sharing your recordings with advanced AI features.
 
-First, run the development server:
+---
+
+## ✨ Features
+
+- **🔐 Robust Authentication**: Secure user login and session management powered by Better Auth.
+- **📁 Video Management**: Organize, edit descriptions, and manage privacy settings for your recordings.
+- **🤖 AI-Powered Analysis**:
+  - Automatic transcription of video content.
+  - Smart chapter generation for easy navigation.
+  - AI-assisted chat for interacting with your video content.
+- **🚀 High-Performance Streaming**: Optimized video delivery using Cloudinary and m3u8 streaming support.
+- **📊 Real-time Background Jobs**: Inngest-powered workflow for processing videos, generating chapters, and subtitles asynchronously.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
+- **Auth**: [Better Auth](https://better-auth.com)
+- **Background Jobs**: [Inngest](https://www.inngest.com/)
+- **Storage**: [Cloudinary](https://cloudinary.com/)
+- **Runtime**: [Bun](https://bun.sh/)
+
+---
+
+## 🚦 Getting Started
+
+### 1. Prerequisites
+- Node.js / Bun
+- PostgreSQL database
+- Cloudinary Account
+- Inngest Account (for background processing)
+
+### 2. Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cd capture-web
+bun install
+```
+
+### 3. Environment Variables
+
+Create a `.env` file based on `.env.example` and fill in your credentials:
+
+```env
+DATABASE_URL="postgresql://..."
+CLOUDINARY_CLOUD_NAME="..."
+CLOUDINARY_API_KEY="..."
+CLOUDINARY_API_SECRET="..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# Add other required keys...
+```
+
+### 4. Database Setup
+
+```bash
+bunx prisma generate
+bunx prisma db push
+```
+
+### 5. Running the App
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🏗️ Architecture
 
-## Learn More
+```mermaid
+graph LR
+    User -->|Uploads| NextJS
+    NextJS -->|Stores Metadata| PG
+    NextJS -->|Uploads Video| Cloudinary
+    NextJS -->|Triggers| Inngest
+    Inngest -->|Transcription| AI_Service
+    Inngest -->|Chapters| AI_Service
+    Inngest -->|Updates| PG
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👤 Maintainer
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Developed by [lwshakib](https://github.com/lwshakib)

@@ -1,52 +1,87 @@
-# React + Vite + CRXJS
+# Capture Extension 🧩
 
-This template helps you quickly start developing Chrome extensions with React, TypeScript and Vite. It includes the CRXJS Vite plugin for seamless Chrome extension development.
+**Capture Extension** is a lightweight, browser-native recording tool for the Capture ecosystem. It allows you to quickly capture any browser tab or your desktop directly from Chrome.
 
-## Features
+---
 
-- React with TypeScript
-- TypeScript support
-- Vite build tool
-- CRXJS Vite plugin integration
-- Chrome extension manifest configuration
+## ✨ Features
 
-## Quick Start
+- **🌐 Tab Recording**: Capture high-quality video of any browser tab.
+- **🖥️ Desktop Capture**: Record your entire screen or specific windows.
+- **🔘 Quick Access**: Launch recordings instantly from the extension popup.
+- **サイドパネル Sidepanel Support**: Use the Chrome sidepanel for management while you record.
+- **🚀 Seamless Integration**: Works with the [Capture Web](../capture-web) platform for easy sharing.
 
-1. Install dependencies:
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite](https://vitejs.dev/) with [CRXJS](https://crxjs.dev/vite-plugin)
+- **APIs**: Chrome Extension Manifest V3
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+## 🚦 Getting Started
+
+### 1. Prerequisites
+- [Node.js](https://nodejs.org/)
+- [Bun](https://bun.sh/) (Optional)
+
+### 2. Installation
 
 ```bash
-npm install
+cd capture-extension
+bun install
 ```
 
-2. Start development server:
+### 3. Development
+
+To start the development server with Hot Module Replacement (HMR):
 
 ```bash
-npm run dev
+bun run dev
 ```
 
-3. Open Chrome and navigate to `chrome://extensions/`, enable "Developer mode", and load the unpacked extension from the `dist` directory.
+### 4. How to Load in Chrome
 
-4. Build for production:
+1.  Open Chrome and navigate to `chrome://extensions/`.
+2.  Enable **"Developer mode"** in the top right corner.
+3.  Click **"Load unpacked"**.
+4.  Select the `dist` folder generated inside the `capture-extension` directory.
+
+### 5. Build for Production
 
 ```bash
-npm run build
+bun run build
 ```
 
-## Project Structure
+---
 
-- `src/popup/` - Extension popup UI
-- `src/content/` - Content scripts
-- `manifest.config.ts` - Chrome extension manifest configuration
+## 🏗️ Architecture
 
-## Documentation
+```mermaid
+graph TD
+    A[Popup UI] --> B[Background Service Worker]
+    C[Sidepanel] --> B
+    B --> D[Content Scripts]
+    D -->|MediaStream| B
+    B -->|Upload| E[Capture Web]
+```
 
-- [React Documentation](https://reactjs.org/)
-- [Vite Documentation](https://vitejs.dev/)
-- [CRXJS Documentation](https://crxjs.dev/vite-plugin)
+---
 
-## Chrome Extension Development Notes
+## 📁 Project Structure
 
-- Use `manifest.config.ts` to configure your extension
-- The CRXJS plugin automatically handles manifest generation
-- Content scripts should be placed in `src/content/`
-- Popup UI should be placed in `src/popup/`
+- `src/popup/`: The main interface when clicking the extension icon.
+- `src/background.ts`: Handles recording logic and communication between components.
+- `src/content/`: Injected scripts for capturing media from web pages.
+- `src/sidepanel/`: Sidepanel UI for persistent controls.
+- `manifest.config.ts`: Configuration for Chrome Extension permissions and assets.
+
+---
+
+## 👤 Maintainer
+
+Developed by [lwshakib](https://github.com/lwshakib)
