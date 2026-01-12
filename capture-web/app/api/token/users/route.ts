@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+/**
+ * Handle OPTIONS requests for CORS preflight.
+ */
 export async function OPTIONS(req: Request) {
   const origin = req.headers.get("origin");
   return new NextResponse(null, {
@@ -14,10 +17,17 @@ export async function OPTIONS(req: Request) {
   });
 }
 
+/**
+ * GET /api/token/users
+ * Returns the currently authenticated user's profile data.
+ * Used by the Chrome Extension to sync user state (avatar, name).
+ */
 export async function GET(req: Request) {
   const origin = req.headers.get("origin");
   try {
+    // Shared session resolution logic
     const session = await auth.api.getSession({ headers: req.headers });
+    
     return NextResponse.json(
       { user: session?.user || null },
       {

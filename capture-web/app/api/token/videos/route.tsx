@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 import { VIDEO_PRIVACY } from "@/generated/prisma/enums";
 import { inngest } from "@/inngest/client";
 
+/**
+ * Handle OPTIONS requests for CORS preflight.
+ */
 export async function OPTIONS(req: Request) {
   const origin = req.headers.get("origin");
   return new NextResponse(null, {
@@ -17,9 +20,15 @@ export async function OPTIONS(req: Request) {
   });
 }
 
+/**
+ * POST /api/token/videos
+ * Registers a newly recorded video in the database after successful Cloudinary upload.
+ * Triggered by the Chrome Extension.
+ */
 export async function POST(req: Request) {
   const origin = req.headers.get("origin");
   try {
+    // Authenticate the request using the Bearer Token
     const session = await auth.api.getSession({ headers: req.headers });
     if (!session?.user) {
       return NextResponse.json(
@@ -35,11 +44,14 @@ export async function POST(req: Request) {
         }
       );
     }
+
+    // Verify the user exists in our DB
     const existUser = await prisma.user.findUnique({
       where: {
         id: session.user.id!,
       },
     });
+
     if (!existUser) {
       return NextResponse.json(
         { error: "User not found" },
@@ -54,6 +66,8 @@ export async function POST(req: Request) {
         }
       );
     }
+
+    // Parse video metadata from the request body
     const {
       title,
       cloudinaryPublicId,
@@ -66,6 +80,8 @@ export async function POST(req: Request) {
       format,
       description,
     } = await req.json();
+
+    // Create a new video entry in Prisma
     const newVideo = await prisma.video.create({
       data: {
         title,
@@ -82,12 +98,15 @@ export async function POST(req: Request) {
         privacy: VIDEO_PRIVACY.PRIVATE,
       },
     });
+
+    // Trigger an Inngest background job for further processing (e.g., AI transcription, thumbnails)
     await inngest.send({
       name: "video.processed",
       data: {
         video: newVideo,
       },
     });
+
     return NextResponse.json(
       {
         video: newVideo,

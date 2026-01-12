@@ -3,6 +3,10 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
+/**
+ * Root Metadata for the web application.
+ * Defines the default title, description, and multi-format favicon sets.
+ */
 export const metadata: Metadata = {
   title: "Capture - AI-Powered Screen Recorder",
   description: "Capture is a screen recorder application. Record your screen, upload, and share. Features AI-powered video analysis.",
@@ -24,24 +28,36 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Root Layout Component
+ * The high-level shell for the entire application.
+ * 
+ * Includes:
+ * - ThemeProvider: Manages light/dark mode via 'next-themes'.
+ * - Toaster: Shared toast notification system for user feedback.
+ * - Global CSS: Injected at the root.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="en">
-        <body className="antialiased">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </body>
-      </html>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {/* Main content injected here by Next.js Routing */}
+          {children}
+          
+          {/* Toast notifications portal */}
+          <Toaster />
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }
