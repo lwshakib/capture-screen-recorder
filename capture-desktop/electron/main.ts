@@ -22,6 +22,8 @@ const ffmpeg = _require('fluent-ffmpeg');
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Polyfill __dirname and __filename for libraries that expect it in a CJS environment
+// This is necessary because we are running in an ESM environment (created by Vite)
+// but some Electron/Node libraries still rely on CommonJS globals.
 // @ts-ignore
 globalThis.__dirname = _dirname;
 // @ts-ignore
@@ -57,11 +59,17 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
   : RENDERER_DIST;
 
+// Main window reference (The dashboard/landing page)
 let mainWindow: BrowserWindow | null;
+// Studio window reference (The floating control bar)
 let studioWindow: BrowserWindow | null;
+// Webcam window reference (The circular camera overlay)
 let webcamWindow: BrowserWindow | null;
+// System tray icon reference
 let tray: Tray | null = null;
+// Flag to prevent app from quitting when window is closed (macOS style behavior or minimization)
 let isQuiting = false;
+// Upload window reference (The post-recording modal)
 let uploadWindow: BrowserWindow | null;
 
 // Streaming state
@@ -91,9 +99,11 @@ function createTray() {
     {
       label: "Open App",
       click: () => {
+        // Restore/Show Main Window if it exists
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.show();
         }
+        // Restore/Show Studio Window if it exists
         if (studioWindow && !studioWindow.isDestroyed()) {
           studioWindow.show();
         }
@@ -122,23 +132,24 @@ function createTray() {
 }
 
 function createWindow() {
+  // Create the main browser window for the application
   mainWindow = new BrowserWindow({
     icon: nativeImage.createFromPath(
       path.join(process.env.VITE_PUBLIC, "logo.ico")
     ),
-    frame: false,
+    frame: false, // Frameless window for custom styling
     title: "Capture Screen Recorder",
-    titleBarStyle: "hidden",
+    titleBarStyle: "hidden", // Hide default title bar
     hasShadow: true,
-    transparent: true,
-    backgroundColor: "#00000000",
+    transparent: true, // Allow transparency in the window
+    backgroundColor: "#00000000", // Fully transparent background
     width: MAIN_WINDOW_WIDTH,
     height: MAIN_WINDOW_HEIGHT,
-    resizable: false,
+    resizable: false, // Fixed size
     webPreferences: {
-      preload: path.join(_dirname, "preload.mjs"),
-      nodeIntegration: false,
-      contextIsolation: true,
+      preload: path.join(_dirname, "preload.mjs"), // Preload script for safe IPC communication
+      nodeIntegration: false, // Security: Disable Node.js integration in renderer
+      contextIsolation: true, // Security: Isolate context to prevent prototype pollution
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
@@ -214,6 +225,7 @@ if (!gotTheLock) {
     // the commandLine is array of strings in which last element is deep link url
     const token = commandLine.pop()?.split("=").pop();
 
+    // Send the auth token to the renderer process
     mainWindow?.webContents.send("auth-token", token);
   });
 
@@ -248,8 +260,10 @@ ipcMain.on("login", (_, redirectUrl: string) => {
   }
 });
 
+// IPC Handler: Get available screen/window sources for recording
 ipcMain.handle("get-sources", async () => {
   try {
+    // desktopCapturer allows Electron to see open windows and screens
     const sources = await desktopCapturer.getSources({
       types: ["screen", "window"],
       thumbnailSize: { width: 240, height: 135 },
@@ -262,22 +276,24 @@ ipcMain.handle("get-sources", async () => {
   }
 });
 
+// IPC Handler: Calculate supported recording resolutions based on current display(s)
 ipcMain.handle("get-supported-resolutions", async () => {
   try {
-    // Get all displays
+    // Get all connected displays from Electron's screen module
     const displays = screen.getAllDisplays();
 
-    // Create resolution options based on available displays
+    // Create available resolution options based on available displays
     const resolutions: string[] = [];
 
     displays.forEach((display) => {
       const { width: displayWidth, height: displayHeight } = display.size;
 
-      // Add native resolution
+      // Always add the display's native resolution
       resolutions.push(`${displayHeight}p(${displayWidth}x${displayHeight})`);
 
-      // Add common lower resolutions that are supported
+      // Add common standard resolutions if the display supports them
       if (displayWidth >= 1920 && displayHeight >= 1080) {
+        // ... (standard resolutions logic)
         resolutions.push("1080p(1920x1080)");
         resolutions.push("720p(1280x720)");
         resolutions.push("480p(854x480)");
@@ -307,7 +323,7 @@ ipcMain.handle("get-supported-resolutions", async () => {
       }
     });
 
-    // Remove duplicates and sort by resolution (highest first)
+    // Remove duplicates and sort by resolution height (highest first)
     const uniqueResolutions = [...new Set(resolutions)].sort((a, b) => {
       const heightA = parseInt(a.match(/(\d+)p/)?.[1] || "0");
       const heightB = parseInt(b.match(/(\d+)p/)?.[1] || "0");
@@ -332,32 +348,35 @@ ipcMain.on("logout", () => {
   studioWindow?.close();
 });
 
+// IPC Handler: Open the 'Studio' window (Small floating control bar)
 ipcMain.on("open-studio", () => {
-  if (studioWindow) return;
+  if (studioWindow) return; // Prevent multiple studio windows
+  
   studioWindow = new BrowserWindow({
     icon: nativeImage.createFromPath(
       path.join(process.env.VITE_PUBLIC, "logo.ico")
     ),
-    frame: false,
+    frame: false, // Removes the OS window frame for the floating control bar
     title: "Capture Studio - Recording Controls",
-    titleBarStyle: "hidden",
-    hasShadow: false,
-    transparent: true,
+    titleBarStyle: "hidden", // Hides native title bar
+    hasShadow: false, // Disables shadow for a flat floating UI
+    transparent: true, // Enables transparency for custom non-rectangular shapes if needed
+    // Center the studio window horizontally
     x: Math.floor(
       (screen.getPrimaryDisplay().workAreaSize.width - STUDIO_WINDOW_WIDTH) / 2
     ),
-    y: 5,
-    backgroundColor: "#00000000",
-    width: STUDIO_WINDOW_WIDTH,
-    height: STUDIO_WINDOW_HEIGHT,
-    fullscreenable: false,
-    maximizable: false,
-    minimizable: false,
-    resizable: false,
+    y: 5, // Position fixed at the top of the screen
+    backgroundColor: "#00000000", // Fully transparent background color
+    width: STUDIO_WINDOW_WIDTH, // Fixed width for the control bar
+    height: STUDIO_WINDOW_HEIGHT, // Fixed height for the control bar
+    fullscreenable: false, // Prevents the window from entering fullscreen mode
+    maximizable: false, // Removes the ability to maximize the window
+    minimizable: false, // Removes the ability to minimize (managed via tray/main app)
+    resizable: false, // Prevents manual resizing of the control UI
     webPreferences: {
       preload: path.join(_dirname, "preload.mjs"),
-      nodeIntegration: false,
-      contextIsolation: true,
+      nodeIntegration: false, // Security: Disable direct Node access
+      contextIsolation: true, // Security: Isolate preload context
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
@@ -386,29 +405,34 @@ ipcMain.on("settings-changed", (_, settings) => {
 });
 
 // Toggle webcam window
+// IPC Handler: Toggle the webcam overlay window
 ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
   if (payload?.enabled) {
+    // If webcam window already exists, just show it
     if (webcamWindow && !webcamWindow.isDestroyed()) {
       webcamWindow.show();
       return;
     }
+
+    // Create a new circular/overlay webcam window
     webcamWindow = new BrowserWindow({
       icon: nativeImage.createFromPath(
         path.join(process.env.VITE_PUBLIC, "logo.ico")
       ),
-      frame: false,
+      frame: false, // Removes the OS window frame for a custom overlay
       title: "Capture Webcam - Camera Overlay",
-      titleBarStyle: "hidden",
-      hasShadow: false,
-      transparent: true,
-      backgroundColor: "#00000000",
-      width: WEBCAM_WINDOW_SIZE,
-      height: WEBCAM_WINDOW_SIZE,
-      resizable: false,
-      fullscreenable: false,
-      maximizable: false,
-      minimizable: false,
-      alwaysOnTop: true,
+      titleBarStyle: "hidden", // Hides native title bar
+      hasShadow: false, // Disables shadow for a flat overlay
+      transparent: true, // Enables transparency for custom shapes (e.g., circular webcam)
+      backgroundColor: "#00000000", // Fully transparent background
+      width: WEBCAM_WINDOW_SIZE, // Fixed width for the webcam overlay
+      height: WEBCAM_WINDOW_SIZE, // Fixed height for the webcam overlay
+      resizable: false, // Prevents manual resizing
+      fullscreenable: false, // Prevents entering fullscreen
+      maximizable: false, // Prevents maximizing
+      minimizable: false, // Prevents minimizing
+      alwaysOnTop: true, // Keep it above other apps
+      // Position at bottom-right corner
       x: Math.floor(
         screen.getPrimaryDisplay().workAreaSize.width - WEBCAM_WINDOW_SIZE - 10
       ),
@@ -431,7 +455,7 @@ ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
       webcamWindow.loadFile(path.join(RENDERER_DIST, "webcam.html"));
     }
 
-    // Keep above other windows and visible over fullscreen if possible
+    // Ensure the webcam stays on top even of fullscreen apps
     webcamWindow.setAlwaysOnTop(true, "screen-saver");
     try {
       webcamWindow.setVisibleOnAllWorkspaces(true, {
@@ -442,6 +466,7 @@ ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
       webcamWindow.setVisibleOnAllWorkspaces(true);
     }
   } else {
+    // Hide/Close if disabled
     if (webcamWindow && !webcamWindow.isDestroyed()) {
       webcamWindow.close();
       webcamWindow = null;
@@ -472,6 +497,7 @@ ipcMain.on("recording:stopped", () => {
   }
 });
 
+// IPC Handler: Receive recording video chunks from renderer
 ipcMain.on(
   "recording:data-available",
   async (_, data: { data: []; filename: string }) => {
@@ -484,17 +510,18 @@ ipcMain.on(
         fs.mkdirSync(videosDir, { recursive: true });
       }
 
-      // Create the full file path
+      // Create the full file path for dragging saving
       const filePath = path.join(videosDir, data.filename);
 
       // Convert the data array to a Buffer and append to file
+      // This allows writing large files incrementally as chunks arrive
       const buffer = Buffer.isBuffer(data.data) ? data.data : Buffer.from(data.data);
       fs.appendFileSync(filePath, buffer);
 
       console.log(`Chunk saved to: ${filePath}`);
     } catch (error) {
       console.error("Error saving recording:", error);
-      // Optionally notify the renderer process about the error
+      // Notify the renderer process if saving fails
       if (uploadWindow && !uploadWindow.isDestroyed()) {
         uploadWindow.webContents.send("recording-save-error", {
           error: error instanceof Error ? error.message : "Unknown error",
@@ -519,6 +546,7 @@ ipcMain.on("open-url", (_, url: string) => {
   }
 });
 
+// IPC Handler: Finish recording and open the upload/preview window
 ipcMain.on(
   "save-recording",
   (_, data: { data: number[]; filename: string }) => {
@@ -528,36 +556,35 @@ ipcMain.on(
     });
 
     if (uploadWindow && !uploadWindow.isDestroyed()) {
-      // Convert the data array back to a format the upload app can use
+      // If upload window exists, just update it with new data
       const recordingData = {
         type: "video-blob",
         blob: data.data, // This will be converted to Blob in the renderer
         filename: data.filename,
-        mimeType: "video/webm", // Default mime type, adjust if needed
+        mimeType: "video/webm", // Default mime type
       };
-      console.log(
-        "Sending recording data to existing upload window:",
-        recordingData
-      );
+      
       uploadWindow.webContents.send("recording-data", recordingData);
       uploadWindow.show();
     } else {
+      // Create new upload window if it doesn't exist
+      // Create new upload window if it doesn't exist
       uploadWindow = new BrowserWindow({
         icon: nativeImage.createFromPath(
           path.join(process.env.VITE_PUBLIC, "logo.ico")
         ),
-        frame: false,
+        frame: false, // Custom UI, no system frame
         title: "Capture Uploading",
-        titleBarStyle: "hidden",
-        hasShadow: true,
-        transparent: true,
+        titleBarStyle: "hidden", // Hide native bars
+        hasShadow: true, // Drop shadow for depth
+        transparent: true, // Allow transparency in background
         backgroundColor: "#00000000",
-        width: UPLOAD_WINDOW_WIDTH,
-        height: UPLOAD_WINDOW_HEIGHT,
-        resizable: false,
-        fullscreenable: false,
-        maximizable: false,
-        minimizable: false,
+        width: UPLOAD_WINDOW_WIDTH, // Fixed width for upload modal
+        height: UPLOAD_WINDOW_HEIGHT, // Fixed height for upload modal
+        resizable: false, // Prevent user resizing as it's a fixed dialog
+        fullscreenable: false, // Not meant for fullscreen
+        maximizable: false, // Cannot maximize
+        minimizable: false, // Cannot minimize (modal behavior)
         webPreferences: {
           preload: path.join(_dirname, "preload.mjs"),
           nodeIntegration: false,
@@ -575,18 +602,15 @@ ipcMain.on(
         uploadWindow.loadFile(path.join(RENDERER_DIST, "upload.html"));
       }
 
-      // Send the recording data once the window is ready
+      // Send the recording data once the window is actually loaded
+      // The 'did-finish-load' event ensures the page is ready to receive data via IPC
       uploadWindow.webContents.on("did-finish-load", () => {
         const recordingData = {
           type: "video-blob",
-          blob: data.data, // This will be converted to Blob in the renderer
+          blob: data.data, 
           filename: data.filename,
-          mimeType: "video/webm", // Default mime type, adjust if needed
+          mimeType: "video/webm",
         };
-        console.log(
-          "Sending recording data to new upload window:",
-          recordingData
-        );
         uploadWindow?.webContents.send("recording-data", recordingData);
       });
 
@@ -614,9 +638,11 @@ ipcMain.on("minimize-upload-window", () => {
 });
 
 // Live Streaming IPC Handlers
+// IPC Handler: Start Live Streaming via FFmpeg
 ipcMain.on("streaming:start", (event, config: StreamConfig) => {
   console.log("Starting live stream with config:", config);
 
+  // Stop any existing stream before starting a new one
   if (ffmpegCommand) {
     console.warn("Stream already running, stopping previous one.");
     ffmpegCommand.kill("SIGINT");
@@ -624,21 +650,24 @@ ipcMain.on("streaming:start", (event, config: StreamConfig) => {
   }
 
   try {
+    // Create a readable stream to feed video data into FFmpeg
     inputStream = new Readable({
-      read() {}
+      read() {} // No-op, we push data manually
     });
 
+    // Construct the RTMP URL
     const baseUrl = config.rtmpUrl.endsWith('/') ? config.rtmpUrl.slice(0, -1) : config.rtmpUrl;
     const fullRtmpUrl = `${baseUrl}/${config.streamKey}`;
     const [width, height] = config.resolution.split('x').map(num => parseInt(num) || 0);
 
+    // Initial FFmpeg command setup
     ffmpegCommand = ffmpeg(inputStream)
-      .inputFormat('webm') // Explicitly tell FFmpeg the input is WebM from MediaRecorder
+      .inputFormat('webm') // Explicitly tell FFmpeg the input is WebM (from MediaRecorder)
       .inputOptions([
-        '-analyzeduration 0',
-        '-probesize 32',
-        '-fflags +genpts+ignthr', // ignthr helps with erratic timestamps from browser
-        '-thread_queue_size 1024' // Buffer more input chunks
+        '-analyzeduration 0', // Reduce delay
+        '-probesize 32',      // Reduce delay
+        '-fflags +genpts+ignthr', // ignthr helps with erratic timestamps from browser MediaRecorder
+        '-thread_queue_size 1024' // Increase buffer to avoid "thread_queue_size" warnings
       ])
       .videoCodec('libx264')
       .audioCodec('aac')
@@ -647,29 +676,30 @@ ipcMain.on("streaming:start", (event, config: StreamConfig) => {
       .fps(config.fps || 30)
       .size(`${width}x${height}`)
       .outputOptions([
-        '-preset ultrafast',
-        '-tune zerolatency',
-        `-g ${config.fps * 2}`,
+        '-preset ultrafast', // Use lowest CPU usage, sacrificing compression efficiency
+        '-tune zerolatency', // Optimize for low latency (essential for live streams)
+        `-g ${config.fps * 2}`, // Keyframe interval (GOP size) - 2 seconds usually recommended for streaming
         `-keyint_min ${config.fps}`,
-        '-crf 23', // Slightly better quality than 25
-        '-pix_fmt yuv420p',
-        '-sc_threshold 0',
-        '-profile:v main',
+        '-crf 23', // Constant Rate Factor (Quality) - Lower is better. 23 is default for x264.
+        '-pix_fmt yuv420p', // Ensure compatibility with most players
+        '-sc_threshold 0', // Disable scene change detection
+        '-profile:v main', // Main profile is widely supported
         '-level 3.1',
-        '-ar 44100',
-        '-b:a 128k',
-        '-maxrate 4000k',
-        '-bufsize 8000k',
-        '-f flv',
-        '-flvflags no_duration_filesize'
+        '-ar 44100', // Audio sample rate
+        '-b:a 128k', // Audio bitrate
+        '-maxrate 4000k', // Max bitrate burst
+        '-bufsize 8000k', // Buffer size for bitrate control
+        '-f flv', // FLV container required for RTMP
+        '-flvflags no_duration_filesize' // Optimization for streaming
       ])
       .output(fullRtmpUrl)
+      // Event Handlers
       .on('start', (commandLine: string) => {
         console.log('FFmpeg process started with command:', commandLine);
         event.reply('streaming:started');
       })
       .on('stderr', (stderrLine: string) => {
-        // Log all FFmpeg output for debugging
+        // Log all FFmpeg output for debugging purposes
         if (stderrLine.includes('error') || stderrLine.includes('Error')) {
            console.error('FFmpeg Log:', stderrLine);
         } else {
@@ -699,9 +729,11 @@ ipcMain.on("streaming:start", (event, config: StreamConfig) => {
   }
 });
 
+// IPC Handler: Receive streaming data chunks from Renderer
 ipcMain.on("streaming:data", (_, data: ArrayBuffer) => {
   if (inputStream) {
     try {
+      // Push the data chunk into the FFmpeg input stream
       inputStream.push(Buffer.from(data));
     } catch (error) {
       console.error('Error pushing data to FFmpeg:', error);
@@ -709,11 +741,14 @@ ipcMain.on("streaming:data", (_, data: ArrayBuffer) => {
   }
 });
 
+// IPC Handler: Stop the live stream
 ipcMain.on("streaming:stop", (event) => {
   console.log("Stopping live stream requested.");
+  // Signal EOF to input stream
   if (inputStream) {
     inputStream.push(null);
   }
+  // Kill FFmpeg process
   if (ffmpegCommand) {
     ffmpegCommand.kill("SIGINT");
   }
