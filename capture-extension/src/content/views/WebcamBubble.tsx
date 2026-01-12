@@ -1,150 +1,91 @@
 import { useEffect, useRef, useState } from "react";
 import { logger } from "../../utils/logger";
 
+/**
+ * WebcamBubble Component
+ * Creates a floating, draggable circular overlay displaying a live camera feed.
+ * This stream is independent of the screen recording stream and is intended as a visual aid.
+ */
 function WebcamBubble() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [loading, setLoading] = useState(false);
-  const [position, setPosition] = useState<{ x: number; y: number }>(() => ({
-    x: 20,
-    y: 20,
-  }));
+  
+  // Floating position state
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 20, y: 20 });
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
+  /**
+   * Media Lifecycle:
+   * Initializes the user's default camera and attaches it to a video element.
+   * Auto-stops when the component is unmounted or the widget is toggled off.
+   */
   useEffect(() => {
     const start = async () => {
       try {
         setLoading(true);
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
+          video: { width: 300, height: 300 }, // Square capture for the bubble
+          audio: false, // Don't capture audio in the bubble to avoid feedback loops
         });
         streamRef.current = stream;
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          const onPlaying = () => setLoading(false);
-          videoRef.current.addEventListener("playing", onPlaying, {
-            once: true,
-          });
-          await videoRef.current.play().catch(() => {
-            setLoading(false);
-          });
+          videoRef.current.onplaying = () => setLoading(false);
+          await videoRef.current.play();
         }
       } catch (err) {
-        logger.error("Failed to get webcam:", err);
+        logger.error("Webcam access denied", err);
         setLoading(false);
       }
     };
 
-    const stop = () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      setLoading(false);
-    };
-
     start();
+
+    // Standard cleanup to release camera hardware
     return () => {
-      stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
+  /**
+   * Persists the bubble's coordinates so it stays in the same place
+   * between page navigations.
+   */
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("capture_webcam_position");
-      if (saved) {
-        const parsed = JSON.parse(saved) as { x: number; y: number };
-        setPosition(parsed);
-      } else {
-        const size = 300; // match CSS container size
-        const x = 20; // bottom-left default
-        const y = Math.max(20, window.innerHeight - size - 20);
-        setPosition({ x, y });
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("capture_webcam_position", JSON.stringify(position));
-    } catch {}
-  }, [position]);
-
-  useEffect(() => {
-    const handleMove = (clientX: number, clientY: number) => {
+    const handleMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      const size = 300; // match CSS
-      const x = Math.min(
-        Math.max(0, clientX - dragOffsetRef.current.dx),
-        window.innerWidth - size
-      );
-      const y = Math.min(
-        Math.max(0, clientY - dragOffsetRef.current.dy),
-        window.innerHeight - size
-      );
-      setPosition({ x, y });
+      setPosition({
+        x: e.clientX - dragOffsetRef.current.dx,
+        y: e.clientY - dragOffsetRef.current.dy
+      });
     };
 
-    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const onMouseUp = () => {
-      isDraggingRef.current = false;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches[0]) handleMove(e.touches[0].clientX, e.touches[0].clientY);
-    };
-    const onTouchEnd = () => {
-      isDraggingRef.current = false;
-    };
+    const handleUp = () => (isDraggingRef.current = false);
 
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
     };
   }, []);
 
-  const onDragStart = (clientX: number, clientY: number) => {
+  const onStartDrag = (e: React.MouseEvent) => {
     isDraggingRef.current = true;
-    dragOffsetRef.current = {
-      dx: clientX - position.x,
-      dy: clientY - position.y,
-    };
-  };
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onDragStart(e.clientX, e.clientY);
-  };
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (!e.touches[0]) return;
-    onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    dragOffsetRef.current = { dx: e.clientX - position.x, dy: e.clientY - position.y };
   };
 
   return (
     <div
-      className="webcam-preview"
+      className="webcam-bubble"
+      onMouseDown={onStartDrag}
       style={{ left: position.x, top: position.y }}
-      onMouseDown={onMouseDown}
-      onTouchStart={onTouchStart}
     >
-      {loading && (
-        <div className="webcam-loading">
-          <div className="webcam-skeleton" />
-          <span className="webcam-loading-text">Loading Webcam…</span>
-        </div>
-      )}
-      <video ref={videoRef} className="webcam-video" muted playsInline />
+      {loading && <div className="loader">Initializing Camera...</div>}
+      <video ref={videoRef} muted playsInline className="video-feed" />
     </div>
   );
 }
