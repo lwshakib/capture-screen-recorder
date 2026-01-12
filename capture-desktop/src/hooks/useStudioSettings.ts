@@ -5,6 +5,9 @@ interface StudioSettings {
   audioInputId: string | null;
   resolution: string | null;
   fps: number | null;
+  isStreamingEnabled: boolean;
+  rtmpUrl: string;
+  streamKey: string;
 }
 
 export function useStudioSettings() {
@@ -13,6 +16,9 @@ export function useStudioSettings() {
     audioInputId: null,
     resolution: null,
     fps: null,
+    isStreamingEnabled: false,
+    rtmpUrl: "rtmp://a.rtmp.youtube.com/live2",
+    streamKey: "",
   });
 
   useEffect(() => {

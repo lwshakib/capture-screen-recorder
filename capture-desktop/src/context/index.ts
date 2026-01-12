@@ -43,6 +43,9 @@ type RecorderState = {
     audioInputId: string | null;
     resolution: string | null;
     fps: number | null;
+    isStreamingEnabled: boolean;
+    rtmpUrl: string;
+    streamKey: string;
   };
   setSettings: (
     settings:
@@ -51,17 +54,26 @@ type RecorderState = {
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         }
       | ((prev: {
           screenId: string | null;
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         }) => {
           screenId: string | null;
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         })
   ) => void;
 };
@@ -180,6 +192,9 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
     audioInputId: null,
     resolution: null,
     fps: null,
+    isStreamingEnabled: false,
+    rtmpUrl: "rtmp://a.rtmp.youtube.com/live2",
+    streamKey: "",
   },
   setSettings: (
     settings:
@@ -188,17 +203,26 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         }
       | ((prev: {
           screenId: string | null;
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         }) => {
           screenId: string | null;
           audioInputId: string | null;
           resolution: string | null;
           fps: number | null;
+          isStreamingEnabled: boolean;
+          rtmpUrl: string;
+          streamKey: string;
         })
   ) =>
     set((state) => ({
