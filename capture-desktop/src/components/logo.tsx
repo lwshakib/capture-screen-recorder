@@ -5,29 +5,39 @@ type LogoIconProps = {
   color?: string
 }
 
+/**
+ * Logo Component
+ * Main branding component that combines the SVG icon with text.
+ */
 export const Logo = ({className, color}: LogoIconProps) => {
   return (
     <div className="flex items-center justify-center">
+      {/* Reusable Icon part */}
       <LogoIcon className={className} color={color} />
       <span className="ml-2 text-2xl font-bold">Capture</span>
     </div>
   )
 }
 
+/**
+ * LogoIcon Component
+ * Pure SVG implementation of the Capture brand logo.
+ */
 export const LogoIcon = ({ className, color = "currentColor" }: LogoIconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 48 48"
-      className={cn("size-10", className)}
+      className={cn("size-10", className)} // cn utility for flexible styling
       fill="none"
     >
       <g
-        transform="translate(6 0)"
+        transform="translate(6 0)" // Offset branding for layout balance
         fill={color}
         fillRule="evenodd"
         clipRule="evenodd"
       >
+        {/* Paths represent various geometric segments of the logo with varying opacities */}
         <path d="m35.3721 14v8.0492h-9.9698v-2.2927z" />
         <path
           d="m35.3699 14.0001-9.9698 5.7565-7.3513-4.2436v-11.513z"
