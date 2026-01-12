@@ -29,18 +29,18 @@ type ResolutionKey = keyof typeof RESOLUTION_DIMENSIONS;
 
 const RECORDING_CONFIG = {
   DEFAULT_RESOLUTION: "1080p(1920x1080)" as ResolutionKey,
-  DEFAULT_FPS: 60, // Default FPS for smoother video
-  VIDEO_BITRATE: 10000000, // 10 Mbps for better quality
-  AUDIO_BITRATE: 192000, // 192 kbps for high-quality audio
-  AUDIO_SAMPLE_RATE: 48000, // 48kHz for high-quality audio
-  AUDIO_CHANNELS: 2, // Stereo for better quality
+  DEFAULT_FPS: 30, // Default to 30 for better compatibility
+  VIDEO_BITRATE: 2500000, // 2.5 Mbps (matching user's example)
+  AUDIO_BITRATE: 128000, // 128 kbps
+  AUDIO_SAMPLE_RATE: 44100, // 44.1kHz is more compatible with RTMP/YouTube
+  AUDIO_CHANNELS: 2, // Stereo
   TIMER_INTERVAL_MS: 1000,
   RECORDING_CHUNK_INTERVAL_MS: 1000,
 } as const;
 
 const SUPPORTED_MIME_TYPES = [
-  "video/webm;codecs=vp9,opus",
   "video/webm;codecs=vp8,opus",
+  "video/webm;codecs=vp9,opus",
   "video/webm;codecs=vp9",
   "video/webm;codecs=vp8",
   "video/webm",
@@ -392,14 +392,14 @@ export default function StudioApp() {
       const handleDataAvailable = (event: BlobEvent): void => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
-          // Send incremental data for real-time processing
           event.data
             .arrayBuffer()
             .then((buffer) => {
-              window.ipcRenderer.send("recording:data-available", {
-                data: Array.from(new Uint8Array(buffer)),
-                filename,
-              });
+              // Only send to streaming if enabled.
+              // Removed incremental local saving (recording:data-available) to eliminate disk I/O lag.
+              if (settings?.isStreamingEnabled) {
+                window.ipcRenderer.send("streaming:data", buffer);
+              }
             })
             .catch((error) => {
               logger.error("Failed to process recording data chunk", error);
@@ -415,22 +415,33 @@ export default function StudioApp() {
               "Recording discarded or restarted - not saving to prevent upload window"
             );
             chunksRef.current = [];
+            if (settings?.isStreamingEnabled) {
+              window.ipcRenderer.send("streaming:stop");
+            }
             return;
           }
 
           // Only save if there are chunks available
           if (chunksRef.current.length === 0) {
             logger.debug("No chunks to save");
+            if (settings?.isStreamingEnabled) {
+              window.ipcRenderer.send("streaming:stop");
+            }
             return;
           }
 
           const blob = new Blob(chunksRef.current, { type: selectedMimeType });
           const arrayBuffer = await blob.arrayBuffer();
           window.ipcRenderer.send("save-recording", {
-            data: Array.from(new Uint8Array(arrayBuffer)),
+            data: new Uint8Array(arrayBuffer),
             filename,
           });
           chunksRef.current = [];
+
+          // Stop streaming if enabled
+          if (settings?.isStreamingEnabled) {
+            window.ipcRenderer.send("streaming:stop");
+          }
         } catch (error) {
           logger.error("Failed to save recording", error);
         } finally {
@@ -454,6 +465,18 @@ export default function StudioApp() {
         setRecordingTime(0);
         window.ipcRenderer.send("recording:started");
         startTimer(timerRef, setRecordingTime);
+
+        // Start streaming if enabled
+        if (settings?.isStreamingEnabled && settings.rtmpUrl && settings.streamKey) {
+          window.ipcRenderer.send("streaming:start", {
+            rtmpUrl: settings.rtmpUrl,
+            streamKey: settings.streamKey,
+            fps: settings.fps || RECORDING_CONFIG.DEFAULT_FPS,
+            videoBitrate: `${RECORDING_CONFIG.VIDEO_BITRATE / 1000}k`,
+            audioBitrate: `${RECORDING_CONFIG.AUDIO_BITRATE / 1000}k`,
+            resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080"
+          });
+        }
       };
 
       recorder.ondataavailable = handleDataAvailable;
@@ -616,6 +639,9 @@ export default function StudioApp() {
               chunksRef.current = [];
               shouldSaveRef.current = true; // Reset flag for new recording
               const filename = generateFilename();
+              const rtmpUrl = settings?.rtmpUrl;
+              const streamKey = settings?.streamKey;
+              const isStreamingEnabled = settings?.isStreamingEnabled;
 
               const handleDataAvailable = (event: BlobEvent): void => {
                 if (event.data.size > 0) {
@@ -623,10 +649,11 @@ export default function StudioApp() {
                   event.data
                     .arrayBuffer()
                     .then((buffer) => {
-                      window.ipcRenderer.send("recording:data-available", {
-                        data: Array.from(new Uint8Array(buffer)),
-                        filename,
-                      });
+                      // Only send to streaming if enabled.
+                      // Local saving is now handled entirely at the end in handleStop.
+                      if (isStreamingEnabled) {
+                        window.ipcRenderer.send("streaming:data", buffer);
+                      }
                     })
                     .catch((error) => {
                       logger.error(
@@ -644,11 +671,17 @@ export default function StudioApp() {
                       "Recording discarded or restarted - not saving to prevent upload window"
                     );
                     chunksRef.current = [];
+                    if (isStreamingEnabled) {
+                      window.ipcRenderer.send("streaming:stop");
+                    }
                     return;
                   }
 
                   if (chunksRef.current.length === 0) {
                     logger.debug("No chunks to save");
+                    if (isStreamingEnabled) {
+                      window.ipcRenderer.send("streaming:stop");
+                    }
                     return;
                   }
 
@@ -657,10 +690,15 @@ export default function StudioApp() {
                   });
                   const arrayBuffer = await blob.arrayBuffer();
                   window.ipcRenderer.send("save-recording", {
-                    data: Array.from(new Uint8Array(arrayBuffer)),
+                    data: new Uint8Array(arrayBuffer),
                     filename,
                   });
                   chunksRef.current = [];
+
+                  // Stop streaming if enabled
+                  if (isStreamingEnabled) {
+                    window.ipcRenderer.send("streaming:stop");
+                  }
                 } catch (error) {
                   logger.error("Failed to save recording", error);
                 } finally {
@@ -684,6 +722,18 @@ export default function StudioApp() {
                 setRecordingTime(0);
                 window.ipcRenderer.send("recording:started");
                 startTimer(timerRef, setRecordingTime);
+
+                // Start streaming if enabled
+                if (isStreamingEnabled && rtmpUrl && streamKey) {
+                  window.ipcRenderer.send("streaming:start", {
+                    rtmpUrl,
+                    streamKey,
+                    fps: settings.fps || RECORDING_CONFIG.DEFAULT_FPS,
+                    videoBitrate: `${RECORDING_CONFIG.VIDEO_BITRATE / 1000}k`,
+                    audioBitrate: `${RECORDING_CONFIG.AUDIO_BITRATE / 1000}k`,
+                    resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080"
+                  });
+                }
               };
 
               newRecorder.ondataavailable = handleDataAvailable;
