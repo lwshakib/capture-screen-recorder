@@ -20,7 +20,13 @@ import {
 
 type ResolutionOption = string;
 
+/**
+ * MediaConfiguration Component
+ * Main UI for the dashboard where users select their recording sources (screen, audio),
+ * adjust quality settings (resolution, FPS), and configure live streaming credentials.
+ */
 export default function MediaConfiguration() {
+  // Destructure state and actions from the global recorder context
   const {
     getScreens,
     getAudioInputs,
@@ -35,6 +41,7 @@ export default function MediaConfiguration() {
     isResolutionsLoading,
   } = useRecorderContext();
 
+  // Local state for UI feedback (refreshing, errors)
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errors, setErrors] = useState<{
     screens?: string;
@@ -43,7 +50,11 @@ export default function MediaConfiguration() {
   }>({});
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
 
-  // Enhanced refresh function with error handling
+  /**
+   * Enhanced refresh function
+   * Simultaneously fetches screen sources, audio inputs, and supported resolutions.
+   * Includes error isolation for each operation.
+   */
   const refreshDevices = useCallback(async () => {
     setIsRefreshing(true);
     setErrors({});
@@ -82,13 +93,13 @@ export default function MediaConfiguration() {
     }
   }, [getScreens, getAudioInputs, getSupportedResolutions]);
 
-  // Initial load
+  // Effect: Initialization load on component mount
   useEffect(() => {
     refreshDevices();
     getSupportedResolutions();
   }, [refreshDevices, getSupportedResolutions]);
 
-  // Enhanced default selections with validation
+  // Effect: Set a default Screen Source if none is selected
   useEffect(() => {
     if (screens.length > 0 && !settings.screenId) {
       const defaultScreen = screens.find((screen) => screen.id) || screens[0];
@@ -98,7 +109,7 @@ export default function MediaConfiguration() {
     }
   }, [screens, settings.screenId, setSettings]);
 
-  // Send settings to studio app when they change
+  // Effect: Synchronize settings with the dedicated "Studio" floating window via IPC
   useEffect(() => {
     if (
       settings.screenId ||
@@ -112,6 +123,7 @@ export default function MediaConfiguration() {
     }
   }, [settings]);
 
+  // Effect: Set a default Audio Source if none is selected
   useEffect(() => {
     if (audioInputs.length > 0 && !settings.audioInputId) {
       const defaultAudio =
@@ -125,6 +137,7 @@ export default function MediaConfiguration() {
     }
   }, [audioInputs, settings.audioInputId, setSettings]);
 
+  // Effect: Set a default Resolution (preferring 720p for standard quality)
   useEffect(() => {
     if (resolutions.length > 0 && !settings.resolution) {
       // Default to 720p for better performance
@@ -134,6 +147,7 @@ export default function MediaConfiguration() {
     }
   }, [resolutions, settings.resolution, setSettings]);
 
+  // Effect: Set a default frame rate (60 FPS for smoothness)
   useEffect(() => {
     if (!settings.fps) {
       // Default to 60 FPS for smoother video
@@ -141,7 +155,9 @@ export default function MediaConfiguration() {
     }
   }, [settings.fps, setSettings]);
 
-  // Validate current selections
+  /**
+   * Validation logic to check if currently selected devices are still present in lists
+   */
   const isScreenValid = screens.some(
     (screen) => screen.id === settings.screenId
   );
@@ -152,6 +168,9 @@ export default function MediaConfiguration() {
     settings.resolution as ResolutionOption
   );
 
+  /**
+   * Truncates long device names for UI layout stability
+   */
   const formatDeviceName = (name: string, maxLength: number = 40) => {
     if (name.length <= maxLength) return name;
     return name.slice(0, maxLength - 3) + "...";
@@ -159,9 +178,10 @@ export default function MediaConfiguration() {
 
   return (
     <div className="h-full">
+      {/* App Header section */}
       <Header />
       <div className="flex-1 px-4 py-2">
-        {/* Error Alerts */}
+        {/* Error Alerts Display */}
         {errors.general && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -169,7 +189,7 @@ export default function MediaConfiguration() {
           </Alert>
         )}
 
-        {/* Refresh Button */}
+        {/* Refresh Header with manual refresh button */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Media Sources</span>
@@ -194,7 +214,7 @@ export default function MediaConfiguration() {
         </div>
 
         <div className="space-y-4">
-          {/* Screen Selection */}
+          {/* Section 1: Screen Source Selection (Desktop Capturer) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Screen Source</label>
@@ -249,7 +269,7 @@ export default function MediaConfiguration() {
             </Select>
           </div>
 
-          {/* Audio Source Selection */}
+          {/* Section 2: Audio Source Selection (Microphone) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Audio Source</label>
@@ -312,7 +332,7 @@ export default function MediaConfiguration() {
             </Select>
           </div>
 
-          {/* Resolution Selection */}
+          {/* Section 3: Output Resolution Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Resolution</label>
@@ -365,7 +385,7 @@ export default function MediaConfiguration() {
             </Select>
           </div>
 
-          {/* FPS Selection */}
+          {/* Section 4: Frame Rate (FPS) Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Frame Rate (FPS)</label>
@@ -392,7 +412,7 @@ export default function MediaConfiguration() {
             </Select>
           </div>
 
-          {/* Live Streaming Selection */}
+          {/* Section 5: Live Streaming Configuration (YouTube RTMP) */}
           <div className="space-y-4 pt-2 border-t border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -407,6 +427,7 @@ export default function MediaConfiguration() {
               />
             </div>
 
+            {/* Render streaming inputs only if toggle is ON */}
             {settings.isStreamingEnabled && (
               <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="space-y-1.5">
@@ -435,7 +456,7 @@ export default function MediaConfiguration() {
             )}
           </div>
 
-          {/* Configuration Status */}
+          {/* Footer Status Indicators */}
           <div className="pt-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div
@@ -455,7 +476,7 @@ export default function MediaConfiguration() {
         </div>
       </div>
 
-      {/* Preview Screen */}
+      {/* Visual Preview Section (Thumbnail of selected screen) */}
       <div className="pt-2 px-4">
         <div className="flex items-center gap-2 mb-2">
           <Monitor className="size-4 opacity-70" />
