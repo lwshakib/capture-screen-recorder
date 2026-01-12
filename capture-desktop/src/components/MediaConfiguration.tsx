@@ -5,6 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import Header from "./Header";
 import PreviewScreen from "./PreviewScreen";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Youtube } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -97,7 +100,13 @@ export default function MediaConfiguration() {
 
   // Send settings to studio app when they change
   useEffect(() => {
-    if (settings.screenId || settings.audioInputId || settings.resolution || settings.fps) {
+    if (
+      settings.screenId ||
+      settings.audioInputId ||
+      settings.resolution ||
+      settings.fps ||
+      settings.isStreamingEnabled
+    ) {
       logger.debug("Sending settings to studio", { settings });
       window.ipcRenderer.send("settings-changed", settings);
     }
@@ -381,6 +390,49 @@ export default function MediaConfiguration() {
                 <SelectItem value="120">120 FPS (Ultra Smooth)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Live Streaming Selection */}
+          <div className="space-y-4 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Youtube className="h-4 w-4 text-red-600" />
+                <label className="text-sm font-medium">Live Stream (YouTube)</label>
+              </div>
+              <Switch
+                checked={settings.isStreamingEnabled}
+                onCheckedChange={(checked) =>
+                  setSettings((prev) => ({ ...prev, isStreamingEnabled: checked }))
+                }
+              />
+            </div>
+
+            {settings.isStreamingEnabled && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
+                  <Input
+                    placeholder="rtmp://a.rtmp.youtube.com/live2"
+                    value={settings.rtmpUrl}
+                    onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
+                  <Input
+                    type="password"
+                    placeholder="Enter your stream key"
+                    value={settings.streamKey}
+                    onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground ml-1">
+                    Your stream key is required to go live.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Configuration Status */}
