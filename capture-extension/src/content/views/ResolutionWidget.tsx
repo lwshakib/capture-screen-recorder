@@ -3,9 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { getWebUrlOrNull } from "../../utils/env";
 import { logger } from "../../utils/logger";
 
+/**
+ * ResolutionWidget Component
+ * Logic for pre-recording setup, including camera/mic selection,
+ * hardware capability probing, and user authentication management.
+ */
+
 type Resolution = { label: string; width: number; height: number };
 
-// Candidate list; will be filtered by device capabilities at runtime
+// Pre-defined resolutions to test against hardware capabilities
 const CANDIDATE_RESOLUTIONS: Resolution[] = [
   { label: "144p (256×144)", width: 256, height: 144 },
   { label: "240p (426×240)", width: 426, height: 240 },
@@ -19,15 +25,14 @@ const CANDIDATE_RESOLUTIONS: Resolution[] = [
 
 type ThemeMode = "dark" | "light";
 
-// Skeleton UI Component
+/**
+ * Skeleton UI displayed during hardware probing or user data fetching
+ */
 const WidgetSkeleton = ({ theme: _theme }: { theme: ThemeMode }) => (
   <div className="resolution-widget__body">
-    {/* Auth button skeleton */}
     <div className="resolution-widget__auth-buttons">
       <div className="skeleton-button skeleton-button--primary"></div>
     </div>
-
-    {/* Resolution section skeleton */}
     <div className="skeleton-section">
       <div className="skeleton-label"></div>
       <div className="skeleton-radios">
@@ -39,21 +44,6 @@ const WidgetSkeleton = ({ theme: _theme }: { theme: ThemeMode }) => (
         ))}
       </div>
     </div>
-
-    {/* Audio input section skeleton */}
-    <div className="skeleton-section">
-      <div className="skeleton-label"></div>
-      <div className="skeleton-radios">
-        {[1, 2].map((i) => (
-          <div key={i} className="skeleton-radio">
-            <div className="skeleton-radio-dot"></div>
-            <div className="skeleton-radio-text"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* User profile skeleton */}
     <div className="resolution-widget__user-profile">
       <div className="resolution-widget__user-info">
         <div className="skeleton-avatar"></div>
@@ -66,10 +56,14 @@ const WidgetSkeleton = ({ theme: _theme }: { theme: ThemeMode }) => (
 
 function ResolutionWidget() {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  
+  // State for hardware/software settings
   const [supported, setSupported] = useState<Resolution[]>([]);
   const [selected, setSelected] = useState<Resolution | null>(null);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null);
+  
+  // Appearance
   const [theme, setTheme] = useState<ThemeMode>(() => {
     try {
       const raw = localStorage.getItem("capture_widget_theme");
@@ -78,6 +72,8 @@ function ResolutionWidget() {
       return "dark";
     }
   });
+
+  // Drag-and-drop mechanics for position persistence
   const [position, setPosition] = useState<{ x: number; y: number }>(() => ({
     x: 0,
     y: 0,
@@ -85,9 +81,13 @@ function ResolutionWidget() {
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
-  // Initialize from storage and default to top-right
+  /**
+   * Hardware Probing:
+   * 1. Temporarily opens the camera to query max supported resolution.
+   * 2. Enumerates microphones.
+   * 3. Loads last used position from localStorage.
+   */
   useEffect(() => {
-    // Load supported resolutions by probing camera capabilities
     const probe = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -95,289 +95,124 @@ function ResolutionWidget() {
           audio: false,
         });
         const track = stream.getVideoTracks()[0];
-        const caps =
-          typeof track.getCapabilities === "function"
-            ? (track.getCapabilities() as any)
-            : {};
-        const widthCaps = caps.width;
-        const heightCaps = caps.height;
-        // Stop immediately after probing
+        const caps = typeof track.getCapabilities === "function" ? (track.getCapabilities() as any) : {};
+        
+        // Clean up immediately after reading capabilities
         stream.getTracks().forEach((t) => t.stop());
 
-        if (widthCaps && heightCaps) {
-          const minW = widthCaps.min ?? 0;
-          const maxW = widthCaps.max ?? Number.MAX_SAFE_INTEGER;
-          const minH = heightCaps.min ?? 0;
-          const maxH = heightCaps.max ?? Number.MAX_SAFE_INTEGER;
+        if (caps.width && caps.height) {
           const filtered = CANDIDATE_RESOLUTIONS.filter(
-            (r) =>
-              r.width >= minW &&
-              r.width <= maxW &&
-              r.height >= minH &&
-              r.height <= maxH
+            (r) => r.width <= (caps.width.max || 0) && r.height <= (caps.height.max || 0)
           ).sort((a, b) => a.width - b.width);
           setSupported(filtered);
-          // Initialize selection from storage or highest supported
-          try {
-            const savedSel = localStorage.getItem(
-              "capture_resolution_selected"
-            );
-            if (savedSel) {
-              const parsed = JSON.parse(savedSel) as Resolution;
-              const found = filtered.find(
-                (r) => r.width === parsed.width && r.height === parsed.height
-              );
-              setSelected(found ?? filtered[filtered.length - 1] ?? null);
-              return;
-            }
-          } catch {}
-          setSelected(filtered[filtered.length - 1] ?? null);
-        } else {
-          // If capabilities not available, fall back to a conservative filter using settings
-          const settings = track.getSettings ? track.getSettings() : {};
-          const currentW = (settings as any).width as number | undefined;
-          const currentH = (settings as any).height as number | undefined;
-          const filtered =
-            typeof currentW === "number" && typeof currentH === "number"
-              ? CANDIDATE_RESOLUTIONS.filter(
-                  (r) => r.width <= currentW && r.height <= currentH
-                )
-              : CANDIDATE_RESOLUTIONS;
-          setSupported(filtered);
-          setSelected(filtered[filtered.length - 1] ?? null);
+          
+          // Restore user's previous selection if valid for current hardware
+          const savedSel = localStorage.getItem("capture_resolution_selected");
+          if (savedSel) {
+            const parsed = JSON.parse(savedSel) as Resolution;
+            const found = filtered.find(r => r.width === parsed.width);
+            setSelected(found || filtered[filtered.length - 1]);
+          } else {
+            setSelected(filtered[filtered.length - 1]);
+          }
         }
-      } catch {
-        // If probing fails, leave list empty
-        setSupported([]);
-        setSelected(null);
+      } catch (err) {
+        logger.error("Hardware probing failed", err);
       }
     };
 
     probe();
 
+    // Fetch available audio input devices
     const enumerate = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const audios = devices.filter((d) => d.kind === "audioinput");
         setAudioInputs(audios);
         const saved = localStorage.getItem("capture_audioinput_selected");
-        if (saved) {
-          const found = audios.find((d) => d.deviceId === saved);
-          setSelectedAudioId(
-            found ? found.deviceId : audios[0]?.deviceId ?? null
-          );
-        } else {
-          setSelectedAudioId(audios[0]?.deviceId ?? null);
-        }
-      } catch {
-        setAudioInputs([]);
-        setSelectedAudioId(null);
+        setSelectedAudioId(audios.find(d => d.deviceId === saved)?.deviceId || audios[0]?.deviceId || null);
+      } catch (e) {
+        logger.error("Audio enumeration failed", e);
       }
     };
     enumerate();
 
+    // Restore widget coordinates
     try {
-      const savedPos = localStorage.getItem(
-        "capture_resolution_widget_position"
-      );
-      if (savedPos) {
-        const parsed = JSON.parse(savedPos) as { x: number; y: number };
-        setPosition(parsed);
-        return;
+      const savedPos = localStorage.getItem("capture_resolution_widget_position");
+      if (savedPos) setPosition(JSON.parse(savedPos));
+      else {
+        // Default: Top right margin
+        setPosition({ x: window.innerWidth - 280, y: 20 });
       }
     } catch {}
-
-    // Default to top-right with margin
-    const margin = 20;
-    const width = 260; // approximate widget width
-    setPosition({
-      x: Math.max(margin, window.innerWidth - width - margin),
-      y: margin,
-    });
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    try {
-      localStorage.setItem(
-        "capture_resolution_selected",
-        JSON.stringify(selected)
-      );
-    } catch {}
-  }, [selected]);
-
-  useEffect(() => {
-    if (!selectedAudioId) return;
-    try {
-      localStorage.setItem("capture_audioinput_selected", selectedAudioId);
-    } catch {}
-  }, [selectedAudioId]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "capture_resolution_widget_position",
-        JSON.stringify(position)
-      );
-    } catch {}
-  }, [position]);
-
+  /**
+   * Global mouse/touch listeners for dragging the floating widget.
+   */
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
       if (!isDraggingRef.current) return;
-      const widgetWidth = containerRef.current?.offsetWidth ?? 300;
-      const widgetHeight = containerRef.current?.offsetHeight ?? 140;
-      const x = Math.min(
-        Math.max(0, clientX - dragOffsetRef.current.dx),
-        window.innerWidth - widgetWidth
-      );
-      const y = Math.min(
-        Math.max(0, clientY - dragOffsetRef.current.dy),
-        window.innerHeight - widgetHeight
-      );
+      const x = Math.min(Math.max(0, clientX - dragOffsetRef.current.dx), window.innerWidth - 260);
+      const y = Math.min(Math.max(0, clientY - dragOffsetRef.current.dy), window.innerHeight - 300);
       setPosition({ x, y });
     };
 
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const onMouseUp = () => {
-      isDraggingRef.current = false;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches[0]) handleMove(e.touches[0].clientX, e.touches[0].clientY);
-    };
-    const onTouchEnd = () => {
-      isDraggingRef.current = false;
-    };
-
+    const onMouseUp = () => { isDraggingRef.current = false; };
+    
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
     };
   }, []);
 
   const onDragStart = (clientX: number, clientY: number) => {
     isDraggingRef.current = true;
-    dragOffsetRef.current = {
-      dx: clientX - position.x,
-      dy: clientY - position.y,
-    };
+    dragOffsetRef.current = { dx: clientX - position.x, dy: clientY - position.y };
   };
 
-  const onHeaderMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onDragStart(e.clientX, e.clientY);
-  };
-
-  const onHeaderTouchStart = (e: React.TouchEvent) => {
-    if (!e.touches[0]) return;
-    onDragStart(e.touches[0].clientX, e.touches[0].clientY);
-  };
-
-  const toggleTheme = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const next: ThemeMode = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    try {
-      localStorage.setItem("capture_widget_theme", next);
-    } catch {}
-    try {
-      const evt = new CustomEvent("capture:theme-change", {
-        detail: { theme: next },
-      });
-      window.dispatchEvent(evt);
-    } catch {}
-  };
-
+  /**
+   * Triggers the auth flow in the background script.
+   */
   const startAuth = () => {
-    try {
-      const webUrl = getWebUrlOrNull();
-
-      if (!webUrl) {
-        logger.warn("VITE_WEB_URL is not defined");
-        return;
-      }
-      chrome.runtime.sendMessage({
-        action: "AUTH_START",
-        webUrl,
-      });
-    } catch (error) {
-      logger.error("Failed to start auth:", error);
-    }
+    const webUrl = getWebUrlOrNull();
+    if (!webUrl) { logger.warn("VITE_WEB_URL missing"); return; }
+    chrome.runtime.sendMessage({ action: "AUTH_START", webUrl });
   };
 
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Syncs user profile data from the web app using the stored Bearer token.
+   */
   const fetchUser = async () => {
     try {
       setIsLoading(true);
-      const token = await chrome.storage.local.get("authToken");
-      if (!token.authToken) {
-        setUser(null);
-        return;
-      }
+      const { authToken } = await chrome.storage.local.get("authToken");
+      if (!authToken) { setUser(null); return; }
 
       const webUrl = getWebUrlOrNull();
-      if (!webUrl) {
-        logger.warn("VITE_WEB_URL is not defined, cannot fetch user");
-        setUser(null);
-        return;
-      }
-
       const response = await fetch(`${webUrl}/api/token/users`, {
-        headers: {
-          Authorization: `Bearer ${token.authToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
-      } else {
-        logger.warn(
-          "Failed to fetch user:",
-          response.status,
-          response.statusText
-        );
-        setUser(null);
+        const data = await response.json();
+        setUser(data.user);
       }
-    } catch (error) {
-      logger.error("Failed to fetch user:", error);
-      setUser(null);
+    } catch (e) {
+      logger.error("User sync failed", e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Check for existing authentication when component mounts
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  // Listen for authentication messages from background script
-  useEffect(() => {
-    const handleMessage = (message: any) => {
-      if (message?.action === "AUTH_SUCCESS") {
-        fetchUser();
-      } else if (message?.action === "AUTH_ERROR") {
-        logger.error("Authentication failed:", message.payload?.reason);
-      }
-    };
-
-    // Listen for messages from background script
-    chrome.runtime.onMessage.addListener(handleMessage);
-
-    return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage);
-    };
-  }, []);
+  useEffect(() => { fetchUser(); }, []);
 
   return (
     <div
@@ -385,166 +220,47 @@ function ResolutionWidget() {
       ref={containerRef}
       style={{ left: position.x, top: position.y }}
     >
-      <div
-        className="resolution-widget__header"
-        onMouseDown={onHeaderMouseDown}
-        onTouchStart={onHeaderTouchStart}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
-          <span>Capture Widget</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="resolution-widget__theme-btn"
-            >
-              {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
-          </div>
+      {/* Header bar handles dragging and theme toggle */}
+      <div className="resolution-widget__header" onMouseDown={(e) => onDragStart(e.clientX, e.clientY)}>
+        <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+          <span>Setup</span>
+          <button className="theme-toggle" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
         </div>
       </div>
 
-      {isLoading ? (
-        // Show skeleton UI while loading
-        <WidgetSkeleton theme={theme} />
-      ) : !user ? (
-        // Show only sign-in button when no user
-        <div className="resolution-widget__body">
-          <div className="resolution-widget__auth-buttons">
-            <button
-              className="resolution-widget__btn resolution-widget__btn-primary"
-              onClick={startAuth}
-              disabled={isLoading}
-            >
-              {isLoading ? "Loading..." : "Sign in"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        // Show full widget contents when user is authenticated
-        <>
-          <div className="resolution-widget__body">
-            <div className="resolution-widget__label">Recording resolution</div>
-            <div
-              className="resolution-widget__radios"
-              role="radiogroup"
-              aria-label="Recording resolution"
-            >
-              {supported.length === 0 ? (
-                <div className="resolution-widget__hint">
-                  No supported resolutions detected
-                </div>
-              ) : (
-                supported.map((r) => {
-                  const val = `${r.width}x${r.height}`;
-                  const checked =
-                    !!selected &&
-                    selected.width === r.width &&
-                    selected.height === r.height;
-                  return (
-                    <label
-                      key={val}
-                      className={`resolution-radio${
-                        checked ? " resolution-radio--checked" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="capture_resolution"
-                        value={val}
-                        checked={checked}
-                        onChange={() => setSelected(r)}
-                      />
-                      <span className="resolution-radio__label">{r.label}</span>
-                    </label>
-                  );
-                })
-              )}
+      <div className="resolution-widget__body">
+        {isLoading ? <WidgetSkeleton theme={theme} /> : !user ? (
+          <button className="primary-btn" onClick={startAuth}>Sign in to Record</button>
+        ) : (
+          <>
+            <div className="label">Resolution</div>
+            <div className="radio-group">
+               {supported.map(r => (
+                 <label key={r.label} className={selected?.width === r.width ? 'active' : ''}>
+                   <input type="radio" checked={selected?.width === r.width} onChange={() => setSelected(r)} />
+                   {r.label}
+                 </label>
+               ))}
             </div>
-            {selected && (
-              <div className="resolution-widget__hint">
-                Selected: {selected.width}×{selected.height}
-              </div>
-            )}
+            
+            <div className="label">Microphone</div>
+            <select value={selectedAudioId || ''} onChange={(e) => setSelectedAudioId(e.target.value)}>
+              {audioInputs.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Default'}</option>)}
+            </select>
 
-            <div className="resolution-widget__label" style={{ marginTop: 12 }}>
-              Audio input
+            {/* Account Management */}
+            <div className="user-footer">
+               <img src={user.image} className="avatar" />
+               <span className="name">{user.name}</span>
+               <button onClick={() => { chrome.storage.local.remove("authToken"); setUser(null); }}>
+                 <LogOut size={14} />
+               </button>
             </div>
-            <div
-              className="resolution-widget__radios"
-              role="radiogroup"
-              aria-label="Audio input"
-            >
-              {audioInputs.length === 0 ? (
-                <div className="resolution-widget__hint">
-                  No microphones detected
-                </div>
-              ) : (
-                audioInputs.map((d) => {
-                  const checked = selectedAudioId === d.deviceId;
-                  return (
-                    <label
-                      key={d.deviceId}
-                      className={`resolution-radio${
-                        checked ? " resolution-radio--checked" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="capture_audioinput"
-                        value={d.deviceId}
-                        checked={checked}
-                        onChange={() => setSelectedAudioId(d.deviceId)}
-                      />
-                      <span className="resolution-radio__label">
-                        {d.label || "Microphone"}
-                      </span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* User profile section at the bottom */}
-          <div className="resolution-widget__user-profile">
-            <div className="resolution-widget__user-info">
-              <div className="resolution-widget__user-avatar">
-                {user.image ? (
-                  <img
-                    src={user.image}
-                    alt={user.name || user.email || "User"}
-                    className="resolution-widget__avatar-img"
-                  />
-                ) : (
-                  <User size={16} />
-                )}
-              </div>
-              <span className="resolution-widget__username">
-                {user.name || user.email || "User"}
-              </span>
-            </div>
-            <button
-              className="resolution-widget__logout-btn"
-              onClick={() => {
-                localStorage.removeItem("authToken");
-                setUser(null);
-              }}
-              aria-label="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
