@@ -14,6 +14,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { useStudioSettings } from "./hooks/useStudioSettings";
 
 // Constants
+// Predefined resolutions for video scaling
 const RESOLUTION_DIMENSIONS = {
   "144p(256x144)": { width: 256, height: 144 },
   "240p(426x240)": { width: 426, height: 240 },
@@ -27,6 +28,7 @@ const RESOLUTION_DIMENSIONS = {
 
 type ResolutionKey = keyof typeof RESOLUTION_DIMENSIONS;
 
+// Default configuration for the MediaRecorder and audio/video settings
 const RECORDING_CONFIG = {
   DEFAULT_RESOLUTION: "1080p(1920x1080)" as ResolutionKey,
   DEFAULT_FPS: 30, // Default to 30 for better compatibility
@@ -34,10 +36,11 @@ const RECORDING_CONFIG = {
   AUDIO_BITRATE: 128000, // 128 kbps
   AUDIO_SAMPLE_RATE: 44100, // 44.1kHz is more compatible with RTMP/YouTube
   AUDIO_CHANNELS: 2, // Stereo
-  TIMER_INTERVAL_MS: 1000,
-  RECORDING_CHUNK_INTERVAL_MS: 1000,
+  TIMER_INTERVAL_MS: 1000, // Update timer every second
+  RECORDING_CHUNK_INTERVAL_MS: 1000, // Fetch data chunks every second for streaming/saving
 } as const;
 
+// Priority list for MIME types supported by MediaRecorder
 const SUPPORTED_MIME_TYPES = [
   "video/webm;codecs=vp8,opus",
   "video/webm;codecs=vp9,opus",
@@ -46,7 +49,7 @@ const SUPPORTED_MIME_TYPES = [
   "video/webm",
 ] as const;
 
-// Types
+// Types definitions
 interface VideoDimensions {
   width: number;
   height: number;
@@ -210,35 +213,56 @@ const combineStreams = (
   return combinedStream;
 };
 
+// Main Studio Application Component
 export default function StudioApp() {
+  // Access global studio settings (screen ID, audio input ID, resolution, etc.)
   const { settings } = useStudioSettings();
+  
+  // State for the active media stream (video + audio)
   const [stream, setStream] = useState<MediaStream | null>(null);
+  
+  // Recording state flags
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  
+  // Counter for the recording duration in seconds
   const [recordingTime, setRecordingTime] = useState(0);
+  
+  // UI state for the webcam overlay toggle
   const [webcamVisible, setWebcamVisible] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const shouldSaveRef = useRef<boolean>(true); // Flag to control whether to save on stop
+  
+  // Refs to maintain mutable state without triggering re-renders
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // The MediaRecorder instance
+  const chunksRef = useRef<Blob[]>([]); // Buffer for recorded video blobs
+  const timerRef = useRef<NodeJS.Timeout | null>(null); // Interval reference for the timer
+  const shouldSaveRef = useRef<boolean>(true); // Flag to control whether to save on stop or discard
 
+  // Effect to handle stream connection changes based on settings
   React.useEffect(() => {
     const connect = async () => {
+      // If no screen is selected, we cannot start
       if (!settings?.screenId) return;
 
       try {
+        // Clean up any existing streams before creating a new one
         stopAllTracks(stream);
 
+        // Determine if we should capture system audio (if no mic selected, or if preferred)
+        // Here we default to system audio if no mic is explicitly chosen
         const shouldCaptureSystemAudio = !settings?.audioInputId;
+        
+        // Get the visual display stream (screen shared)
         const displayStream = await getDisplayStream(
           settings.screenId,
           shouldCaptureSystemAudio
         );
 
+        // Get the microphone stream if an ID is provided
         const micStream = settings?.audioInputId
           ? await getMicrophoneStream(settings.audioInputId)
           : null;
 
+        // Merge the audio and video streams into one
         const combinedStream = combineStreams(
           displayStream,
           micStream,
@@ -252,8 +276,10 @@ export default function StudioApp() {
     };
     void connect();
 
+    // Cleanup function when component unmounts or settings change
     return () => {
       if (isRecording) {
+        // Stop recording properly if unmounting while active
         const rec = mediaRecorderRef.current;
         if (rec && rec.state !== "inactive") {
           rec.stop();
@@ -268,6 +294,8 @@ export default function StudioApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
 
+  // Helper to resize the video stream using an HTML5 Canvas
+  // This is used to downscale/upscale the video to the target resolution/FPS before recording
   const createResizedStream = useCallback(
     (originalStream: MediaStream): MediaStream => {
       if (!settings?.resolution) {
@@ -278,7 +306,7 @@ export default function StudioApp() {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d", {
           alpha: false,
-          desynchronized: true, // Better performance
+          desynchronized: true, // Hint to browser to optimize for low latency
         });
 
         if (!ctx) {
@@ -294,10 +322,11 @@ export default function StudioApp() {
         canvas.width = targetDimensions.width;
         canvas.height = targetDimensions.height;
 
-        // Use better image smoothing for quality
+        // Use better image smoothing for quality scaling
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
 
+        // Create a hidden video element to play the source stream
         const video = document.createElement("video");
         video.srcObject = originalStream;
         video.muted = true;
@@ -306,13 +335,15 @@ export default function StudioApp() {
         video.setAttribute("playsinline", "true");
 
         const fps = settings?.fps || RECORDING_CONFIG.DEFAULT_FPS;
+        // Capture the canvas as a media stream
         const resizedStream = canvas.captureStream(fps);
 
-        // Preserve audio tracks from original stream
+        // Preserve audio tracks from original stream (canvas only captures video)
         originalStream.getAudioTracks().forEach((track) => {
           resizedStream.addTrack(track);
         });
 
+        // Animation loop to draw video frames onto the canvas
         let animationFrameId: number;
         let isActive = true;
 
@@ -335,6 +366,7 @@ export default function StudioApp() {
           drawFrame();
         };
 
+        // Stop animation loop if video track ends
         const videoTrack = originalStream.getVideoTracks()[0];
         if (videoTrack) {
           videoTrack.addEventListener("ended", () => {
@@ -359,6 +391,7 @@ export default function StudioApp() {
     clearTimer(timerRef);
   }, []);
 
+  // Handles the start of a new recording session
   const startRecording = React.useCallback(async (): Promise<void> => {
     if (!stream || isRecording) {
       return;
@@ -369,6 +402,7 @@ export default function StudioApp() {
       return;
     }
 
+    // Prepare the stream (resize/fps adjustment)
     const recordingStream = createResizedStream(stream);
 
     try {
@@ -379,6 +413,7 @@ export default function StudioApp() {
         return;
       }
 
+      // Initialize MediaRecorder
       const recorder = new MediaRecorder(recordingStream, {
         mimeType: selectedMimeType,
         videoBitsPerSecond: RECORDING_CONFIG.VIDEO_BITRATE,
@@ -389,6 +424,7 @@ export default function StudioApp() {
       shouldSaveRef.current = true; // Default: save when stopped normally
       const filename = generateFilename();
 
+      // Callback when a data chunk is available (every second)
       const handleDataAvailable = (event: BlobEvent): void => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
@@ -396,7 +432,7 @@ export default function StudioApp() {
             .arrayBuffer()
             .then((buffer) => {
               // Only send to streaming if enabled.
-              // Removed incremental local saving (recording:data-available) to eliminate disk I/O lag.
+              // We rely on 'save-recording' at the end for the file save to avoid I/O blocking
               if (settings?.isStreamingEnabled) {
                 window.ipcRenderer.send("streaming:data", buffer);
               }
@@ -407,9 +443,10 @@ export default function StudioApp() {
         }
       };
 
+      // Callback when recording stops
       const handleStop = async (): Promise<void> => {
         try {
-          // Only save if shouldSave flag is true AND there are chunks available
+          // Check if we should discard this recording (e.g., restart or delete clicked)
           if (!shouldSaveRef.current) {
             logger.debug(
               "Recording discarded or restarted - not saving to prevent upload window"
@@ -421,7 +458,7 @@ export default function StudioApp() {
             return;
           }
 
-          // Only save if there are chunks available
+          // Validation: Ensure we have data
           if (chunksRef.current.length === 0) {
             logger.debug("No chunks to save");
             if (settings?.isStreamingEnabled) {
@@ -430,6 +467,7 @@ export default function StudioApp() {
             return;
           }
 
+          // Combine chunks into a single Blob and send to Main process
           const blob = new Blob(chunksRef.current, { type: selectedMimeType });
           const arrayBuffer = await blob.arrayBuffer();
           window.ipcRenderer.send("save-recording", {
@@ -459,6 +497,7 @@ export default function StudioApp() {
         window.ipcRenderer.send("recording:stopped", { filename });
       };
 
+      // Callback when recording starts successfully
       const handleStart = (): void => {
         setIsRecording(true);
         setIsPaused(false);
@@ -466,7 +505,7 @@ export default function StudioApp() {
         window.ipcRenderer.send("recording:started");
         startTimer(timerRef, setRecordingTime);
 
-        // Start streaming if enabled
+        // Trigger Live Streaming if enabled
         if (settings?.isStreamingEnabled && settings.rtmpUrl && settings.streamKey) {
           window.ipcRenderer.send("streaming:start", {
             rtmpUrl: settings.rtmpUrl,
