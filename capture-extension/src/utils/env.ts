@@ -1,20 +1,16 @@
 /**
- * Type-safe environment variable access
+ * Environment configuration for the Chrome Extension.
+ * Provides type-safe access to build-time variables.
  */
-
-export function getWebUrl(): string {
-  const webUrl = import.meta.env.VITE_WEB_URL;
-  
-  if (!webUrl) {
-    throw new Error(
-      "VITE_WEB_URL is not defined. Please set it in your .env file."
-    );
-  }
-  
-  return webUrl;
+interface Env {
+  // The base URL for the web application (e.g., http://localhost:3000)
+  VITE_WEB_URL: string;
 }
 
-export function getWebUrlOrNull(): string | null {
-  return import.meta.env.VITE_WEB_URL || null;
-}
-
+/**
+ * Returns the validated environment variables.
+ * Defaults to localhost if the VITE_WEB_URL is not provided during build.
+ */
+export const env: Env = {
+  VITE_WEB_URL: import.meta.env.VITE_WEB_URL || "http://localhost:3000",
+};

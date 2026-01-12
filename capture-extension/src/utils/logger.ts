@@ -1,27 +1,37 @@
 /**
- * Centralized logging utility
- * In production, these can be filtered or disabled
+ * Centralized logging utility for the extension.
+ * Helps distinguish between background script and content script logs.
  */
+type LogLevel = "debug" | "info" | "warn" | "error";
 
-const isDevelopment = import.meta.env.DEV;
+class Logger {
+  private prefix = "[Capture Extension]";
 
-export const logger = {
-  log: (...args: any[]) => {
-    if (isDevelopment) {
-      console.log("[Capture]", ...args);
+  private format(level: LogLevel, ...args: unknown[]) {
+    return [`${this.prefix} [${level.toUpperCase()}]`, ...args];
+  }
+
+  // Debug logs: only useful during development
+  debug(...args: unknown[]) {
+    if (import.meta.env.DEV) {
+      console.debug(...this.format("debug", ...args));
     }
-  },
-  warn: (...args: any[]) => {
-    console.warn("[Capture]", ...args);
-  },
-  error: (...args: any[]) => {
-    console.error("[Capture]", ...args);
-  },
-  debug: (...args: any[]) => {
-    if (isDevelopment) {
-      console.debug("[Capture]", ...args);
-    }
-  },
-};
+  }
 
-export default logger;
+  // Info logs: for general status updates
+  info(...args: unknown[]) {
+    console.log(...this.format("info", ...args));
+  }
+
+  // Warning logs: for non-critical issues
+  warn(...args: unknown[]) {
+    console.warn(...this.format("warn", ...args));
+  }
+
+  // Error logs: for critical failures
+  error(...args: unknown[]) {
+    console.error(...this.format("error", ...args));
+  }
+}
+
+export const logger = new Logger();
