@@ -4,6 +4,8 @@ import { app, BrowserWindow, ipcMain, shell, desktopCapturer, screen, nativeImag
 import fs$1 from "node:fs";
 import path$1 from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { Readable } from "stream";
 var main = {};
 const fs = require$$0;
 const path = require$$1;
@@ -101,7 +103,11 @@ var cliOptions = function optionMatcher(args) {
     )
   );
 })();
-const __dirname$1 = path$1.dirname(fileURLToPath(import.meta.url));
+const _require = createRequire(import.meta.url);
+const ffmpeg = _require("fluent-ffmpeg");
+const _dirname = path$1.dirname(fileURLToPath(import.meta.url));
+globalThis.__dirname = _dirname;
+globalThis.__filename = fileURLToPath(import.meta.url);
 const MAIN_WINDOW_WIDTH = 360;
 const MAIN_WINDOW_HEIGHT = 780;
 const STUDIO_WINDOW_WIDTH = 300;
@@ -109,7 +115,7 @@ const STUDIO_WINDOW_HEIGHT = 48;
 const WEBCAM_WINDOW_SIZE = 220;
 const UPLOAD_WINDOW_WIDTH = 500;
 const UPLOAD_WINDOW_HEIGHT = 200;
-process.env.APP_ROOT = path$1.join(__dirname$1, "..");
+process.env.APP_ROOT = path$1.join(_dirname, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const studioUrl = VITE_DEV_SERVER_URL + "/studio.html";
 const uploadUrl = VITE_DEV_SERVER_URL + "/upload.html";
@@ -122,6 +128,8 @@ let webcamWindow;
 let tray = null;
 let isQuiting = false;
 let uploadWindow;
+let ffmpegCommand = null;
+let inputStream = null;
 function createTray() {
   if (tray) {
     tray.destroy();
@@ -175,7 +183,7 @@ function createWindow() {
     height: MAIN_WINDOW_HEIGHT,
     resizable: false,
     webPreferences: {
-      preload: path$1.join(__dirname$1, "preload.mjs"),
+      preload: path$1.join(_dirname, "preload.mjs"),
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
@@ -239,6 +247,8 @@ if (!gotTheLock) {
     mainWindow == null ? void 0 : mainWindow.webContents.send("auth-token", token);
   });
   app.whenReady().then(() => {
+    const ffmpegInstaller = _require("@ffmpeg-installer/ffmpeg");
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
     createWindow();
     createTray();
   });
@@ -353,7 +363,7 @@ ipcMain.on("open-studio", () => {
     minimizable: false,
     resizable: false,
     webPreferences: {
-      preload: path$1.join(__dirname$1, "preload.mjs"),
+      preload: path$1.join(_dirname, "preload.mjs"),
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
@@ -407,7 +417,7 @@ ipcMain.on("webcam:toggle", (_event, payload) => {
         screen.getPrimaryDisplay().workAreaSize.height - WEBCAM_WINDOW_SIZE - 10
       ),
       webPreferences: {
-        preload: path$1.join(__dirname$1, "preload.mjs"),
+        preload: path$1.join(_dirname, "preload.mjs"),
         nodeIntegration: false,
         contextIsolation: true,
         webSecurity: true,
@@ -462,9 +472,9 @@ ipcMain.on(
         fs$1.mkdirSync(videosDir, { recursive: true });
       }
       const filePath = path$1.join(videosDir, data.filename);
-      const buffer = Buffer.from(data.data);
-      fs$1.writeFileSync(filePath, buffer);
-      console.log(`Recording saved successfully to: ${filePath}`);
+      const buffer = Buffer.isBuffer(data.data) ? data.data : Buffer.from(data.data);
+      fs$1.appendFileSync(filePath, buffer);
+      console.log(`Chunk saved to: ${filePath}`);
     } catch (error) {
       console.error("Error saving recording:", error);
       if (uploadWindow && !uploadWindow.isDestroyed()) {
@@ -528,7 +538,7 @@ ipcMain.on(
         maximizable: false,
         minimizable: false,
         webPreferences: {
-          preload: path$1.join(__dirname$1, "preload.mjs"),
+          preload: path$1.join(_dirname, "preload.mjs"),
           nodeIntegration: false,
           contextIsolation: true,
           webSecurity: true,
@@ -572,6 +582,91 @@ ipcMain.on("minimize-upload-window", () => {
   if (uploadWindow && !uploadWindow.isDestroyed()) {
     uploadWindow.minimize();
   }
+});
+ipcMain.on("streaming:start", (event, config2) => {
+  console.log("Starting live stream with config:", config2);
+  if (ffmpegCommand) {
+    console.warn("Stream already running, stopping previous one.");
+    ffmpegCommand.kill("SIGINT");
+    ffmpegCommand = null;
+  }
+  try {
+    inputStream = new Readable({
+      read() {
+      }
+    });
+    const baseUrl = config2.rtmpUrl.endsWith("/") ? config2.rtmpUrl.slice(0, -1) : config2.rtmpUrl;
+    const fullRtmpUrl = `${baseUrl}/${config2.streamKey}`;
+    const [width, height] = config2.resolution.split("x").map((num) => parseInt(num) || 0);
+    ffmpegCommand = ffmpeg(inputStream).inputFormat("webm").inputOptions([
+      "-analyzeduration 0",
+      "-probesize 32",
+      "-fflags +genpts+ignthr",
+      // ignthr helps with erratic timestamps from browser
+      "-thread_queue_size 1024"
+      // Buffer more input chunks
+    ]).videoCodec("libx264").audioCodec("aac").audioBitrate(config2.audioBitrate || "128k").videoBitrate(config2.videoBitrate || "2500k").fps(config2.fps || 30).size(`${width}x${height}`).outputOptions([
+      "-preset ultrafast",
+      "-tune zerolatency",
+      `-g ${config2.fps * 2}`,
+      `-keyint_min ${config2.fps}`,
+      "-crf 23",
+      // Slightly better quality than 25
+      "-pix_fmt yuv420p",
+      "-sc_threshold 0",
+      "-profile:v main",
+      "-level 3.1",
+      "-ar 44100",
+      "-b:a 128k",
+      "-maxrate 4000k",
+      "-bufsize 8000k",
+      "-f flv",
+      "-flvflags no_duration_filesize"
+    ]).output(fullRtmpUrl).on("start", (commandLine) => {
+      console.log("FFmpeg process started with command:", commandLine);
+      event.reply("streaming:started");
+    }).on("stderr", (stderrLine) => {
+      if (stderrLine.includes("error") || stderrLine.includes("Error")) {
+        console.error("FFmpeg Log:", stderrLine);
+      } else {
+        console.log("FFmpeg Log:", stderrLine);
+      }
+    }).on("error", (err, stdout, stderr) => {
+      console.error("FFmpeg error:", err.message);
+      console.error("FFmpeg stderr:", stderr);
+      event.reply("streaming:error", { error: err.message });
+      ffmpegCommand = null;
+      inputStream = null;
+    }).on("end", () => {
+      console.log("FFmpeg process ended");
+      event.reply("streaming:stopped");
+      ffmpegCommand = null;
+      inputStream = null;
+    });
+    ffmpegCommand.run();
+  } catch (error) {
+    console.error("Error starting stream:", error);
+    event.reply("streaming:error", { error: error instanceof Error ? error.message : "Unknown error" });
+  }
+});
+ipcMain.on("streaming:data", (_, data) => {
+  if (inputStream) {
+    try {
+      inputStream.push(Buffer.from(data));
+    } catch (error) {
+      console.error("Error pushing data to FFmpeg:", error);
+    }
+  }
+});
+ipcMain.on("streaming:stop", (event) => {
+  console.log("Stopping live stream requested.");
+  if (inputStream) {
+    inputStream.push(null);
+  }
+  if (ffmpegCommand) {
+    ffmpegCommand.kill("SIGINT");
+  }
+  event.reply("streaming:stopped");
 });
 export {
   MAIN_DIST,

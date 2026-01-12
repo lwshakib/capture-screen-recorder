@@ -13,6 +13,19 @@ export default defineConfig({
       main: {
         // Shortcut of `build.lib.entry`.
         entry: 'electron/main.ts',
+        vite: {
+          build: {
+            rollupOptions: {
+              external: [
+                '@ffmpeg-installer/ffmpeg',
+                '@ffmpeg-installer/win32-x64',
+                '@ffmpeg-installer/darwin-x64',
+                '@ffmpeg-installer/linux-x64',
+                'fluent-ffmpeg'
+              ]
+            }
+          }
+        }
       },
       preload: {
         // Shortcut of `build.rollupOptions.input`.
