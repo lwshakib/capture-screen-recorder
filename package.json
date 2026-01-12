@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "install:all": "cd capture-desktop && bun install && cd ../capture-web && bun install && cd ../capture-extension && bun install"
+    }
+}
