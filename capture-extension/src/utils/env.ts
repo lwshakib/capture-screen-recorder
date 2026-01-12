@@ -14,3 +14,10 @@ interface Env {
 export const env: Env = {
   VITE_WEB_URL: import.meta.env.VITE_WEB_URL || "http://localhost:3000",
 };
+
+/**
+ * Returns the configured web URL.
+ */
+export function getWebUrlOrNull(): string {
+  return env.VITE_WEB_URL;
+}
