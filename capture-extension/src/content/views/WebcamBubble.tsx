@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import "./WebcamBubble.css";
 import { logger } from "../../utils/logger";
 
 function WebcamBubble() {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./App.css";
 import RecordingCard from "./RecordingCard";
 import ResolutionWidget from "./ResolutionWidget";
 import WebcamBubble from "./WebcamBubble";

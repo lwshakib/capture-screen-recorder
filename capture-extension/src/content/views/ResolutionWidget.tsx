@@ -1,6 +1,5 @@
 import { LogOut, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import "./ResolutionWidget.css";
 import { getWebUrlOrNull } from "../../utils/env";
 import { logger } from "../../utils/logger";
 

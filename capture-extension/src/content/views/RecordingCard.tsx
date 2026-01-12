@@ -10,7 +10,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./RecordingCard.css";
 import { getWebUrlOrNull } from "../../utils/env";
 import { logger } from "../../utils/logger";
 

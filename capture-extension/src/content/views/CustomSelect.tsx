@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./CustomSelect.css";
 
 export type SelectOption = { label: string; value: string };
 
