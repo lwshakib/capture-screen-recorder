@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+// Interface defining the configuration sync'd across windows
 interface StudioSettings {
   screenId: string | null;
   audioInputId: string | null;
@@ -10,7 +11,13 @@ interface StudioSettings {
   streamKey: string;
 }
 
+/**
+ * useStudioSettings Hook
+ * Used in secondary windows (Studio window) to receive real-time setting updates
+ * from the main dashboard window via Electron IPC.
+ */
 export function useStudioSettings() {
+  // Local state for settings, synced with main process
   const [settings, setSettings] = useState<StudioSettings>({
     screenId: null,
     audioInputId: null,
@@ -22,22 +29,28 @@ export function useStudioSettings() {
   });
 
   useEffect(() => {
-    // Listen for settings updates from the main window
+    /**
+     * Callback for setting updates
+     * Receives the updated settings object from Electron's main process.
+     */
     const handleSettingsUpdate = (
       _event: Electron.IpcRendererEvent,
       ...args: unknown[]
     ) => {
       const newSettings = args[0] as StudioSettings;
+      // Update local state, triggering a re-render in the Studio window
       setSettings(newSettings);
     };
 
-    // Add event listener for settings updates
-    window.ipcRenderer.on("settings-updated", handleSettingsUpdate);
+    // Listen for 'settings-updated' broadcast from the Main Process
+    if (window.ipcRenderer) {
+      window.ipcRenderer.on("settings-updated", handleSettingsUpdate);
 
-    // Cleanup function
-    return () => {
-      window.ipcRenderer.off("settings-updated", handleSettingsUpdate);
-    };
+      // Cleanup: stop listening when the component (window) is closed
+      return () => {
+        window.ipcRenderer.off("settings-updated", handleSettingsUpdate);
+      };
+    }
   }, []);
 
   return {
