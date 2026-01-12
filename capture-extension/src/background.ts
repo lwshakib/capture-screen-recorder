@@ -1,12 +1,17 @@
 import type { ExtensionMessage } from "./types/messages";
 import { logger } from "./utils/logger";
 
+/**
+ * Listener for the extension action button (the icon in the toolbar).
+ * This toggles the recording UI on the current active tab.
+ */
 chrome.action.onClicked.addListener(async (tab) => {
+  // Ignore tabs without IDs or URLs (e.g., system pages)
   if (tab.id === undefined || !tab.url) {
     return;
   }
 
-  // Check if the page supports content scripts
+  // Security check: Content scripts are restricted on certain system Pages
   try {
     const url = new URL(tab.url);
     const isSpecialPage =
@@ -20,12 +25,15 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
   } catch (urlError) {
-    // Invalid URL, skip
+    // Skip if URL is malformed
     logger.warn("Invalid tab URL:", tab.url);
     return;
   }
 
-  // Check if content script is loaded by checking for the container
+  /**
+   * Helper function to detect if our content script is already running in the tab.
+   * Checks for specific DOM element IDs added by the script.
+   */
   const checkContentScriptLoaded = async (): Promise<{
     loaded: boolean;
     outdated: boolean;
@@ -34,8 +42,10 @@ chrome.action.onClicked.addListener(async (tab) => {
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id! },
         func: () => {
+          // Check for the existence of the recorder container
           const hasNew =
             document.getElementById("__capture_screen_recorder") !== null;
+          // Check for legacy version to warn user
           const hasOld =
             document.getElementById("__blink_screen_recorder") !== null;
           return { hasNew, hasOld };
@@ -49,12 +59,15 @@ chrome.action.onClicked.addListener(async (tab) => {
         outdated: result?.hasOld === true,
       };
     } catch (error) {
-      // Scripting API might not work on some pages
+      // Return false if scripting API is unavailable for this page
       return { loaded: false, outdated: false };
     }
   };
 
-  // Try to send message, with retry logic and increasing delays
+  /**
+   * Attempts to send a TOGGLE message to the content script.
+   * Includes retry logic if the script hasn't fully initialized yet.
+   */
   const sendToggleMessage = async (
     retries = 3,
     delay = 200
@@ -66,18 +79,19 @@ chrome.action.onClicked.addListener(async (tab) => {
       return true;
     } catch (error) {
       if (retries > 0) {
-        // Check if content script is loaded
+        // If message fails, check if it's because the script isn't loaded
         const { loaded } = await checkContentScriptLoaded();
         if (!loaded) {
-          // Content script not loaded yet, wait longer
+          // Increase delay and try again
           await new Promise((resolve) => setTimeout(resolve, delay));
           return sendToggleMessage(retries - 1, delay * 1.5);
         }
-        // Content script is loaded but message failed, retry quickly
+        // If loaded but failed, retry quickly (handles context invalidation)
         await new Promise((resolve) => setTimeout(resolve, 100));
         return sendToggleMessage(retries - 1, delay);
       }
 
+      // Exhausted retries: provide specific debugging info
       const { loaded, outdated } = await checkContentScriptLoaded();
       if (outdated) {
         logger.error(
@@ -88,9 +102,6 @@ chrome.action.onClicked.addListener(async (tab) => {
         logger.error(
           "Content script is not loaded on this page. The extension UI will not appear. " +
             "Please refresh the page if this is a newly opened tab."
-        );
-        logger.error(
-          "This may happen if the page is still loading or if content scripts are blocked by Chrome settings."
         );
       } else {
         logger.warn(
@@ -106,172 +117,125 @@ chrome.action.onClicked.addListener(async (tab) => {
   await sendToggleMessage();
 });
 
+/**
+ * Universal runtime message listener.
+ * Handles inter-script communication (Content Script -> Background Script).
+ */
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender) => {
+  // Relay TOGGLE command to a specific tab
   if (message?.action === "TOGGLE" && sender.tab?.id !== undefined) {
     chrome.tabs
       .sendMessage(sender.tab.id, { action: "TOGGLE" })
       .catch((error) => {
-        // Content script may not be loaded or page may not support content scripts
         logger.warn("Could not send message to tab:", error);
       });
-  } else if (message?.action === "AUTH_START") {
+  } 
+  
+  // Handle the start of the OAuth authentication flow
+  else if (message?.action === "AUTH_START") {
     const webUrl = message?.webUrl as string;
     if (!webUrl) {
       logger.error("AUTH_START message missing webUrl");
       return;
     }
 
+    // Generate redirect URI for Chrome identity API
     const redirectUri = chrome.identity.getRedirectURL("provider_cb");
     const authUrl = `${webUrl}/auth/extension?redirect_uri=${encodeURIComponent(
       redirectUri
     )}`;
-    logger.debug("Starting auth flow...");
-    logger.debug("Web URL:", webUrl);
-    logger.debug("Redirect URI:", redirectUri);
-    logger.debug("Auth URL:", authUrl);
+    
+    logger.debug("Starting auth flow...", { webUrl, redirectUri });
 
-    // Check if the web app is accessible
+    // Verify web app connectivity before launching auth window
     fetch(`${webUrl}/api/health`).catch(() => {
-      logger.error(
-        "Web app is not accessible. Make sure it's running on",
-        webUrl
-      );
+      logger.error("Web app is not accessible at", webUrl);
       if (sender.tab?.id !== undefined) {
-        chrome.tabs
-          .sendMessage(sender.tab.id, {
-            action: "AUTH_ERROR",
-            payload: {
-              reason:
-                "Web app is not accessible. Please ensure the web app is running.",
-            },
-          })
-          .catch(() => {
-            // Content script may not be loaded
-          });
+        chrome.tabs.sendMessage(sender.tab.id, {
+          action: "AUTH_ERROR",
+          payload: { reason: "Web app is unavailable. Ensure the server is running." },
+        }).catch(() => {});
       }
       return;
     });
 
+    // Launch the Chrome Identity Auth Flow
     chrome.identity.launchWebAuthFlow(
       { url: authUrl, interactive: true },
       (redirectedTo) => {
-        logger.debug("Auth flow completed. Redirected to:", redirectedTo);
         if (chrome.runtime.lastError) {
-          logger.error("Chrome runtime error:", chrome.runtime.lastError);
+          logger.error("Auth Flow runtime error:", chrome.runtime.lastError);
           if (sender.tab?.id !== undefined) {
-            chrome.tabs
-              .sendMessage(sender.tab.id, {
-                action: "AUTH_ERROR",
-                payload: {
-                  reason: `Chrome error: ${chrome.runtime.lastError.message}`,
-                },
-              })
-              .catch(() => {
-                // Content script may not be loaded
-              });
+            chrome.tabs.sendMessage(sender.tab.id, {
+              action: "AUTH_ERROR",
+              payload: { reason: `Platform error: ${chrome.runtime.lastError.message}` },
+            }).catch(() => {});
           }
           return;
         }
 
+        // Handle user cancellation or empty redirects
         if (!redirectedTo) {
-          logger.error(
-            "No redirect URL received. User may have cancelled the auth flow."
-          );
+          logger.error("Auth flow cancelled or failed to redirect.");
           if (sender.tab?.id !== undefined) {
-            chrome.tabs
-              .sendMessage(sender.tab.id, {
-                action: "AUTH_ERROR",
-                payload: {
-                  reason: "Authentication was cancelled or failed to complete.",
-                },
-              })
-              .catch(() => {
-                // Content script may not be loaded
-              });
+            chrome.tabs.sendMessage(sender.tab.id, {
+              action: "AUTH_ERROR",
+              payload: { reason: "Authentication was cancelled." },
+            }).catch(() => {});
           }
           return;
         }
+
         try {
           const u = new URL(redirectedTo);
-          logger.debug("Parsing redirect URL:", u.toString());
-
-          // Try to get token from query parameters first (Chrome extension flow)
+          
+          // Extract the authentication token from either query params or URL hash
           let params = new URLSearchParams(u.search);
           let token = params.get("token");
 
-          // If no token in query params, try hash (fallback for OAuth flows)
           if (!token && u.hash) {
             params = new URLSearchParams(u.hash.substring(1));
             token = params.get("token");
           }
 
-          logger.debug("Extracted token:", token ? "Present" : "Missing");
-
           if (!token) {
-            logger.error(
-              "No token found in redirect URL. Full URL:",
-              redirectedTo
-            );
+            logger.error("No token found in redirect URL.");
             if (sender.tab?.id !== undefined) {
-              chrome.tabs
-                .sendMessage(sender.tab.id, {
-                  action: "AUTH_ERROR",
-                  payload: {
-                    reason:
-                      "No authentication token received. Please try signing in again.",
-                  },
-                })
-                .catch(() => {
-                  // Content script may not be loaded
-                });
+              chrome.tabs.sendMessage(sender.tab.id, {
+                action: "AUTH_ERROR",
+                payload: { reason: "No auth token received. Try again." },
+              }).catch(() => {});
             }
             return;
           }
-          // Check if chrome.storage is available
-          if (!chrome.storage || !chrome.storage.local) {
-            logger.error("chrome.storage.local is not available");
-            if (sender.tab?.id !== undefined) {
-              chrome.tabs
-                .sendMessage(sender.tab.id, {
-                  action: "AUTH_ERROR",
-                  payload: { reason: "Storage permission not available" },
-                })
-                .catch(() => {
-                  // Content script may not be loaded
-                });
-            }
-            return;
+
+          // Save the retrieved token to persistent local storage
+          if (!chrome.storage?.local) {
+            throw new Error("Local storage is unavailable");
           }
 
           chrome.storage.local.set({ authToken: token }, () => {
-            logger.debug("Auth token saved to storage");
+            logger.debug("Auth success: Token saved.");
 
-            // Send success message to all tabs
+            // Broadcast success to ALL open tabs so current page can update UI
             chrome.tabs.query({}, (tabs) => {
               for (const t of tabs) {
                 if (t.id !== undefined) {
-                  chrome.tabs
-                    .sendMessage(t.id, {
-                      action: "AUTH_SUCCESS",
-                      payload: { token },
-                    })
-                    .catch(() => {
-                      // Ignore errors for tabs that don't have content scripts
-                    });
+                  chrome.tabs.sendMessage(t.id, {
+                    action: "AUTH_SUCCESS",
+                    payload: { token },
+                  }).catch(() => {});
                 }
               }
             });
           });
         } catch (err) {
+          logger.error("Failed to parse redirect URL", err);
           if (sender.tab?.id !== undefined) {
-            chrome.tabs
-              .sendMessage(sender.tab.id, {
-                action: "AUTH_ERROR",
-                payload: { reason: `Redirect parse failed: ${String(err)}` },
-              })
-              .catch(() => {
-                // Content script may not be loaded
-              });
+            chrome.tabs.sendMessage(sender.tab.id, {
+              action: "AUTH_ERROR",
+              payload: { reason: "Invalid response from auth provider." },
+            }).catch(() => {});
           }
         }
       }
