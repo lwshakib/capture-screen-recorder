@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/electron-vite.animate.svg'
-import './App.css'
+import { useEffect } from "react";
+import AuthButton from "./components/AuthButton";
+import ControlLayout from "./components/ControlLayout";
+import LoadingSkeleton from "./components/LoadingSkeleton";
+import MediaConfiguration from "./components/MediaConfiguration";
+import { useRecorderContext } from "./context";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  // Get user state from global context
+  const { user, isUserLoading } = useRecorderContext();
 
+  // Effect: Automatically open the simplified Studio recording controls
+  // once the user is successfully logged in and loaded.
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      window.ipcRenderer.send("open-studio");
+    }
+  }, [isUserLoading, user]);
+
+  // Loading state
+  if (isUserLoading) {
+    return (
+      <div style={{ userSelect: "none" }}>
+        <ControlLayout>
+          <LoadingSkeleton />
+        </ControlLayout>
+      </div>
+    );
+  }
+
+  // Main Render:
+  // If user is logged in -> Show Media Configuration (Source/Mic selection)
+  // If user is logged out -> Show Login Button
   return (
-    <>
-      <div>
-        <a href="https://electron-vite.github.io" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div style={{ userSelect: "none" }}>
+      <ControlLayout>
+        {user ? <MediaConfiguration /> : <AuthButton />}
+      </ControlLayout>
+    </div>
+  );
 }
-
-export default App
