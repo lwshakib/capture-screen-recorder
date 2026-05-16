@@ -1,22 +1,25 @@
-import crxLogo from '@/assets/crx.svg'
-import reactLogo from '@/assets/react.svg'
-import viteLogo from '@/assets/vite.svg'
-import HelloWorld from '@/components/HelloWorld'
-import './App.css'
+import "./App.css";
 
 export default function App() {
   return (
-    <div>
-      <a href="https://vite.dev" target="_blank" rel="noreferrer">
-        <img src={viteLogo} className="logo" alt="Vite logo" />
-      </a>
-      <a href="https://reactjs.org/" target="_blank" rel="noreferrer">
-        <img src={reactLogo} className="logo react" alt="React logo" />
-      </a>
-      <a href="https://crxjs.dev/vite-plugin" target="_blank" rel="noreferrer">
-        <img src={crxLogo} className="logo crx" alt="crx logo" />
-      </a>
-      <HelloWorld msg="Vite + React + CRXJS" />
+    <div style={{ padding: "16px", minWidth: "300px" }}>
+      <h2 style={{ marginTop: 0 }}>Capture Screen Recorder</h2>
+      <p>Click the extension icon on any webpage to start recording.</p>
+      <div
+        style={{
+          marginTop: "16px",
+          padding: "12px",
+          backgroundColor: "#f5f5f5",
+          borderRadius: "4px",
+        }}
+      >
+        <strong>Quick Start:</strong>
+        <ol style={{ margin: "8px 0", paddingLeft: "20px" }}>
+          <li>Navigate to any webpage</li>
+          <li>Click the Capture extension icon</li>
+          <li>Start recording your screen</li>
+        </ol>
+      </div>
     </div>
-  )
+  );
 }
