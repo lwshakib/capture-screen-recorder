@@ -114,7 +114,7 @@ export default function HeroSection() {
                   as="h1"
                   className="mx-auto mt-8 max-w-4xl text-5xl text-balance max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
                 >
-                  Modern Solutions for Customer Engagement
+                  High-Performance Screen & Camera Recording
                 </TextEffect>
                 <TextEffect
                   per="line"
@@ -124,8 +124,9 @@ export default function HeroSection() {
                   as="p"
                   className="mx-auto mt-8 max-w-2xl text-lg text-balance"
                 >
-                  Highly customizable components for building modern websites
-                  and applications that look and feel the way you mean it.
+                  Record your desktop, browser tab, or webcam instantly. Edit,
+                  share, and synchronize your recordings to high-speed R2 cloud
+                  storage seamlessly.
                 </TextEffect>
 
                 <AnimatedGroup
@@ -151,8 +152,8 @@ export default function HeroSection() {
                       size="lg"
                       className="rounded-xl px-5 text-base"
                     >
-                      <Link href="#link">
-                        <span className="text-nowrap">Start Building</span>
+                      <Link href="/home">
+                        <span className="text-nowrap">Get Started</span>
                       </Link>
                     </Button>
                   </div>
@@ -163,8 +164,8 @@ export default function HeroSection() {
                     variant="ghost"
                     className="h-10.5 rounded-xl px-5"
                   >
-                    <Link href="#link">
-                      <span className="text-nowrap">Request a demo</span>
+                    <Link href="/get-app">
+                      <span className="text-nowrap">Download Apps</span>
                     </Link>
                   </Button>
                 </AnimatedGroup>
@@ -184,19 +185,22 @@ export default function HeroSection() {
                 ...transitionVariants,
               }}
             >
-              <div className="relative mt-8 -mr-56 overflow-hidden mask-b-from-55% px-2 sm:mt-12 sm:mr-0 md:mt-20">
+              <div
+                id="features"
+                className="relative mt-8 -mr-56 overflow-hidden mask-b-from-55% px-2 sm:mt-12 sm:mr-0 md:mt-20"
+              >
                 <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border bg-background p-4 shadow-lg ring-1 inset-shadow-2xs shadow-zinc-950/15 ring-background dark:inset-shadow-white/20">
                   <Image
                     className="relative hidden aspect-15/8 rounded-2xl bg-background dark:block"
-                    src="/mail2.png"
-                    alt="app screen"
+                    src="/demos/dark_web_app_recorder.png"
+                    alt="Capture Dark Theme App Screen"
                     width="2700"
                     height="1440"
                   />
                   <Image
                     className="relative z-2 aspect-15/8 rounded-2xl border border-border/25 dark:hidden"
-                    src="/mail2-light.png"
-                    alt="app screen"
+                    src="/demos/light_web_app_recorder.png"
+                    alt="Capture Light Theme App Screen"
                     width="2700"
                     height="1440"
                   />
@@ -205,95 +209,8 @@ export default function HeroSection() {
             </AnimatedGroup>
           </div>
         </section>
-        <section className="bg-background pt-16 pb-16 md:pb-32">
-          <div className="group relative m-auto max-w-5xl px-6">
-            <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-              <Link
-                href="/"
-                className="block text-sm duration-150 hover:opacity-75"
-              >
-                <span> Meet Our Customers</span>
-
-                <ChevronRight className="ml-1 inline-block size-3" />
-              </Link>
-            </div>
-            <div className="mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 group-hover:blur-xs sm:gap-x-16 sm:gap-y-14">
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nvidia.svg"
-                  alt="Nvidia Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/column.svg"
-                  alt="Column Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/github.svg"
-                  alt="GitHub Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nike.svg"
-                  alt="Nike Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
-                  alt="Lemon Squeezy Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/laravel.svg"
-                  alt="Laravel Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-7 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lilly.svg"
-                  alt="Lilly Logo"
-                  height="28"
-                  width="auto"
-                />
-              </div>
-
-              <div className="flex">
-                <img
-                  className="mx-auto h-6 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/openai.svg"
-                  alt="OpenAI Logo"
-                  height="24"
-                  width="auto"
-                />
-              </div>
-            </div>
-          </div>
+        <section id="solution" className="bg-background py-8">
+          {/* Solution anchor target */}
         </section>
       </main>
     </>
