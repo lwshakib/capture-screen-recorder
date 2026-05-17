@@ -1,4 +1,4 @@
-import { WEB_URL, VERIFICATION_SECRET_KEY } from "./constants";
+import { WEB_URL } from "./constants";
 
 /**
  * Environment variable validation and type-safe access
@@ -7,5 +7,4 @@ import { WEB_URL, VERIFICATION_SECRET_KEY } from "./constants";
 
 export const env = {
   VITE_WEB_URL: WEB_URL,
-  VITE_VERIFICATION_SECRET_KEY: VERIFICATION_SECRET_KEY,
 };

@@ -119,3 +119,12 @@
   /* Opt-out interactive elements (buttons, inputs) from drag behavior to maintain functionality */
   -webkit-app-region: no-drag;
 }
+
+/* Utility to hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

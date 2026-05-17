@@ -1,4 +1,3 @@
-import { useLocalStorage } from "@uidotdev/usehooks";
 import { useEffect } from "react";
 
 import { useRecorderContext } from "../context";
@@ -15,21 +14,22 @@ export default function ControlLayout({
 }) {
   // Access the getUser function from global recorder context
   const { getUser } = useRecorderContext();
-  // Retrieve the auth token from local storage
-  const [token] = useLocalStorage<string | null>("auth-token-v2", null);
-
-  // Whenever the token changes, attempt to fetch user info from the backend
+  // Whenever the component mounts, attempt to fetch user info from the backend using the token on disk
   useEffect(() => {
-    if (token) {
-      getUser(token);
-    }
-  }, [token, getUser]);
+    const fetchUser = async () => {
+      const token = await window.ipcRenderer.invoke("get-token");
+      if (token && typeof token === "string") {
+        getUser(token);
+      }
+    };
+    fetchUser();
+  }, [getUser]);
 
   return (
     // Main container with full height and rounded corners
     <div className="bg-background flex px-1 flex-col rounded-3xl overflow-hidden h-screen ">
       {/* Scrollable/Flexible content area for children */}
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 overflow-hidden flex flex-col">{children}</div>
 
       {/* Persistence footer (Logo, Logout button, etc.) */}
       <Footer />

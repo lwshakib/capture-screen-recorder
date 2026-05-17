@@ -11,6 +11,21 @@ export const httpClient = axios.create({
   baseURL: env.VITE_WEB_URL, // Use validated web URL from environment
 });
 
+// Auth Interceptor: Automatically inject the Bearer token from the local file system
+httpClient.interceptors.request.use(async (config) => {
+    try {
+        const token = await window.ipcRenderer.invoke("get-token");
+        if (token && typeof token === "string") {
+            // Remove wrapping quotes if present from JSON.stringify/parse
+            const cleanToken = token.replace(/^["']+|["']+$/g, "");
+            config.headers.Authorization = `Bearer ${cleanToken}`;
+        }
+    } catch (error) {
+        logger.error("Failed to inject auth token", error);
+    }
+    return config;
+});
+
 // Request Interceptor: Logs every outgoing HTTP request for debugging
 httpClient.interceptors.request.use(
   (config) => {

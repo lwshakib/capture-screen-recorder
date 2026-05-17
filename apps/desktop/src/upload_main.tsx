@@ -2,8 +2,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ThemeProvider } from "./components/theme-provider.tsx";
-import "./index.css";
 import "@workspace/ui/globals.css";
+import "./index.css";
 import UploadApp from "./upload_app";
 
 // Initialize the React application for the Upload process

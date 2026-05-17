@@ -32,7 +32,7 @@ export default function App() {
   // If user is logged in -> Show Media Configuration (Source/Mic selection)
   // If user is logged out -> Show Login Button
   return (
-    <div style={{ userSelect: "none" }}>
+    <div className="h-screen overflow-hidden" style={{ userSelect: "none" }}>
       <ControlLayout>
         {user ? <MediaConfiguration /> : <AuthButton />}
       </ControlLayout>

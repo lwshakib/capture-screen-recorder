@@ -4,4 +4,3 @@
  */
 
 export const WEB_URL = "http://localhost:3000";
-export const VERIFICATION_SECRET_KEY = "1234567890";

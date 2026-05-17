@@ -1,7 +1,5 @@
-import { useLocalStorage } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { Button } from "@workspace/ui/components/button";
-import axios from "axios";
 import { env } from "@/lib/env";
 import { Loader2 } from "lucide-react";
 
@@ -10,20 +8,20 @@ import { Loader2 } from "lucide-react";
  * Handles the user authentication flow by creating an electronic link for login.
  */
 export default function AuthButton() {
-  // Persistence for the auth token using local storage hook
-  const [, setToken] = useLocalStorage<string | null>("auth-token-v2", null);
   // Local state to manage loading status during the login process
   const [isLoading, setIsLoading] = useState(false);
 
   // Effect to listen for auth-token events from the main process (Deep Linking)
   useEffect(() => {
-    const handleAuthToken = (
+    const handleAuthToken = async (
       _event: Electron.IpcRendererEvent,
       ...args: unknown[]
     ) => {
       const newToken = args[0] as string;
       // Update local storage with the new token received from the deep link
-      setToken(newToken);
+      await window.ipcRenderer.invoke("save-token", newToken);
+      // Force a reload or update state to reflect the new token
+      window.location.reload();
     };
     // Attach listener to 'auth-token' channel
     window.ipcRenderer.on("auth-token", handleAuthToken);
@@ -32,31 +30,20 @@ export default function AuthButton() {
     return () => {
       window.ipcRenderer.off("auth-token", handleAuthToken);
     };
-  }, [setToken]);
+  }, []);
 
   /**
    * login function
    * Calls the backend to create a secure login link and opens it via Electron's shell.
    */
-  const login = async () => {
+  const login = () => {
     try {
       setIsLoading(true);
-      // Request login URL from the web application
-      const {
-        data: { redirectUrl },
-      } = await axios.post(
-        `${env.VITE_WEB_URL}/api/verification/create-electron-link`,
-        {},
-        {
-          headers: {
-            "verification-secret-key": env.VITE_VERIFICATION_SECRET_KEY || "",
-          },
-          withCredentials: true,
-        }
-      );
-      console.log("redirectUrl", redirectUrl);
+      // The URL to the web application's dedicated electron auth page
+      const authUrl = `${env.VITE_WEB_URL}/desktop`;
+      
       // Instruct main process to open the URL in the system browser
-      window.ipcRenderer.send("login", redirectUrl);
+      window.ipcRenderer.send("login", authUrl);
     } catch (error) {
       console.error("Login redirect failed", error);
     } finally {
