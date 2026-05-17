@@ -25,9 +25,7 @@ const _dirname = path.dirname(fileURLToPath(import.meta.url));
 // Polyfill __dirname and __filename for libraries that expect it in a CJS environment
 // This is necessary because we are running in an ESM environment (created by Vite)
 // but some Electron/Node libraries still rely on CommonJS globals.
-// @ts-expect-error
 globalThis.__dirname = _dirname;
-// @ts-expect-error
 globalThis.__filename = fileURLToPath(import.meta.url);
 
 const MAIN_WINDOW_WIDTH = 360;
