@@ -9,6 +9,7 @@ import {
   screen,
   shell,
   Tray,
+  Notification,
 } from "electron";
 import fs from "node:fs";
 import path from "node:path";
@@ -30,7 +31,7 @@ globalThis.__dirname = _dirname;
 globalThis.__filename = fileURLToPath(import.meta.url);
 
 const MAIN_WINDOW_WIDTH = 360;
-const MAIN_WINDOW_HEIGHT = 780;
+const MAIN_WINDOW_HEIGHT = 600;
 const STUDIO_WINDOW_WIDTH = 300;
 const STUDIO_WINDOW_HEIGHT = 48;
 const WEBCAM_WINDOW_SIZE = 220;
@@ -85,13 +86,18 @@ interface StreamConfig {
 let ffmpegCommand: FfmpegCommand | null = null;
 let inputStream: Readable | null = null;
 
+// Helper to get the correct icon path based on platform
+const getIconPath = () => {
+  const iconExt = process.platform === "win32" ? "ico" : "png";
+  return path.join(process.env.VITE_PUBLIC, `logo.${iconExt}`);
+};
+
 function createTray() {
   if (tray) {
     tray.destroy();
   }
 
-  // Use the PNG logo from public directory
-  const iconPath = path.join(process.env.VITE_PUBLIC, "logo.ico");
+  const iconPath = getIconPath();
   const image = nativeImage.createFromPath(iconPath);
   tray = new Tray(image);
 
@@ -134,9 +140,7 @@ function createTray() {
 function createWindow() {
   // Create the main browser window for the application
   mainWindow = new BrowserWindow({
-    icon: nativeImage.createFromPath(
-      path.join(process.env.VITE_PUBLIC, "logo.ico")
-    ),
+    icon: nativeImage.createFromPath(getIconPath()),
     frame: false, // Frameless window for custom styling
     title: "Capture Screen Recorder",
     titleBarStyle: "hidden", // Hide default title bar
@@ -202,13 +206,13 @@ app.on("activate", () => {
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient(
-      "capture-screen-recorder",
+      "capture",
       process.execPath,
       [path.resolve(process.argv[1])]
     );
   }
 } else {
-  app.setAsDefaultProtocolClient("capture-screen-recorder");
+  app.setAsDefaultProtocolClient("capture");
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -239,6 +243,49 @@ if (!gotTheLock) {
 }
 
 // IPC handlers
+const CAPTURE_DIR = path.join(app.getPath("home"), ".capture");
+const TOKEN_FILE = path.join(CAPTURE_DIR, "token.json");
+
+// Ensure .capture directory exists
+if (!fs.existsSync(CAPTURE_DIR)) {
+  fs.mkdirSync(CAPTURE_DIR, { recursive: true });
+}
+
+ipcMain.handle("save-token", (_, token: string) => {
+  try {
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ token }));
+    return true;
+  } catch (error) {
+    console.error("Failed to save token:", error);
+    return false;
+  }
+});
+
+ipcMain.handle("get-token", () => {
+  try {
+    if (fs.existsSync(TOKEN_FILE)) {
+      const data = fs.readFileSync(TOKEN_FILE, "utf-8");
+      return JSON.parse(data).token;
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to read token:", error);
+    return null;
+  }
+});
+
+ipcMain.handle("remove-token", () => {
+  try {
+    if (fs.existsSync(TOKEN_FILE)) {
+      fs.unlinkSync(TOKEN_FILE);
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to remove token:", error);
+    return false;
+  }
+});
+
 ipcMain.on("closeApp", () => {
   isQuiting = true;
   app.quit();
@@ -353,9 +400,7 @@ ipcMain.on("open-studio", () => {
   if (studioWindow) return; // Prevent multiple studio windows
   
   studioWindow = new BrowserWindow({
-    icon: nativeImage.createFromPath(
-      path.join(process.env.VITE_PUBLIC, "logo.ico")
-    ),
+    icon: nativeImage.createFromPath(getIconPath()),
     frame: false, // Removes the OS window frame for the floating control bar
     title: "Capture Studio - Recording Controls",
     titleBarStyle: "hidden", // Hides native title bar
@@ -416,9 +461,7 @@ ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
 
     // Create a new circular/overlay webcam window
     webcamWindow = new BrowserWindow({
-      icon: nativeImage.createFromPath(
-        path.join(process.env.VITE_PUBLIC, "logo.ico")
-      ),
+      icon: nativeImage.createFromPath(getIconPath()),
       frame: false, // Removes the OS window frame for a custom overlay
       title: "Capture Webcam - Camera Overlay",
       titleBarStyle: "hidden", // Hides native title bar
@@ -549,11 +592,23 @@ ipcMain.on("open-url", (_, url: string) => {
 // IPC Handler: Finish recording and open the upload/preview window
 ipcMain.on(
   "save-recording",
-  (_, data: { data: number[]; filename: string }) => {
+  (_, data: { data: number[]; filename: string; isCloudUploadEnabled?: boolean }) => {
     console.log("Received save-recording request:", {
       filename: data.filename,
       dataLength: data.data.length,
+      isCloudUploadEnabled: data.isCloudUploadEnabled,
     });
+
+    // Skip cloud upload window and save purely locally if setting is off
+    if (data.isCloudUploadEnabled === false) {
+      if (Notification.isSupported()) {
+        new Notification({
+          title: "Capture Screen Recorder",
+          body: `Recording saved successfully to Videos/Capture/${data.filename}`,
+        }).show();
+      }
+      return;
+    }
 
     if (uploadWindow && !uploadWindow.isDestroyed()) {
       // If upload window exists, just update it with new data
@@ -570,9 +625,7 @@ ipcMain.on(
       // Create new upload window if it doesn't exist
       // Create new upload window if it doesn't exist
       uploadWindow = new BrowserWindow({
-        icon: nativeImage.createFromPath(
-          path.join(process.env.VITE_PUBLIC, "logo.ico")
-        ),
+        icon: nativeImage.createFromPath(getIconPath()),
         frame: false, // Custom UI, no system frame
         title: "Capture Uploading",
         titleBarStyle: "hidden", // Hide native bars
