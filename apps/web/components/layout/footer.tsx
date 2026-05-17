@@ -1,4 +1,4 @@
-import { Logo } from '@/components/logo'
+import { Logo } from '@/components/layout/logo'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
@@ -284,7 +284,7 @@ export default function FooterSection() {
                     </form>
                 </div>
                 <div className="mt-12 flex flex-wrap items-end justify-between gap-6 border-t py-6">
-                    <small className="text-muted-foreground order-last block text-center text-sm md:order-first">© {new Date().getFullYear()} Tailark, All rights reserved</small>
+                    <small className="text-muted-foreground order-last block text-center text-sm md:order-first">© {new Date().getFullYear()} Capture, All rights reserved</small>
                     <form action="">
                         <div className="relative">
                             <ChevronsUpDown
@@ -311,3 +311,4 @@ export default function FooterSection() {
         </footer>
     )
 }
+

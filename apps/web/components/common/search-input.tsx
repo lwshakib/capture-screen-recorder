@@ -220,3 +220,4 @@ function SearchIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+

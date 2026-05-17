@@ -4,6 +4,7 @@ import {
   Bell,
   CreditCard,
   Crown,
+  Download,
   Home,
   Library,
   Settings2,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { NavMain } from "@/components/nav-main";
+import { NavMain } from "@/components/layout/nav-main";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
@@ -55,6 +56,11 @@ const navMain = [
     url: "/settings",
     icon: Settings2,
   },
+  {
+    title: "Get App",
+    url: "/get-app",
+    icon: Download,
+  },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -85,46 +91,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
       </SidebarContent>
       {state !== "collapsed" && (
-        <SidebarFooter>
-          <Card className="mx-2 mb-2">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Crown className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">Upgrade to Pro</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Unlock advanced features and unlimited recordings
-              </p>
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                  <span>Unlimited screen recordings</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                  <span>4K quality export</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                  <span>Advanced editing tools</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                  <span>Priority support</span>
-                </div>
-              </div>
-              <div className="text-center mb-3">
-                <span className="text-lg font-bold">$10</span>
-                <span className="text-xs text-muted-foreground">/month</span>
-              </div>
-              <Button size="sm" className="w-full">
-                Upgrade Now
-              </Button>
-            </CardContent>
-          </Card>
+        <SidebarFooter className="p-4">
+          <div className="rounded-2xl bg-primary/5 border border-primary/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-primary">
+              <Crown className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Pro Plan</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Unlock AI features and unlimited 4K recordings for <span className="font-bold text-foreground">$10/mo</span>.
+            </p>
+            <Button size="sm" className="w-full h-8 rounded-lg text-xs font-medium" asChild>
+              <Link href="/billing">Upgrade Now</Link>
+            </Button>
+          </div>
         </SidebarFooter>
       )}
       <SidebarRail />
     </Sidebar>
   );
 }
+

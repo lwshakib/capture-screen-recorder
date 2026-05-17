@@ -1,6 +1,6 @@
 "use client";
 import { authClient } from '@/lib/auth-client'
-import { LogoIcon } from '@/components/logo'
+import { LogoIcon } from '@/components/layout/logo'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
@@ -9,27 +9,30 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+export default function SignUpPage() {
+    const [firstName, setFirstName] = useState('')
+    const [lastName, setLastName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const callbackUrl = searchParams.get("callbackUrl") || "/home"
+    const callbackURL = searchParams.get("callbackURL") || "/home"
 
-    const handleSignIn = async () => {
+    const handleSignUp = async () => {
         setLoading(true)
-        await authClient.signIn.email({
+        await authClient.signUp.email({
             email,
             password,
-            callbackURL: callbackUrl
+            name: `${firstName} ${lastName}`,
+            callbackURL: callbackURL
         }, {
             onRequest: () => {
                 setLoading(true)
             },
             onSuccess: () => {
-                toast.success("Signed in successfully")
-                router.push(callbackUrl)
+                toast.success("Account created successfully")
+                router.push(callbackURL)
             },
             onError: (ctx) => {
                 toast.error(ctx.error.message)
@@ -43,7 +46,7 @@ export default function LoginPage() {
             <form
                 onSubmit={(e) => {
                     e.preventDefault()
-                    handleSignIn()
+                    handleSignUp()
                 }}
                 className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]">
                 <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
@@ -54,16 +57,49 @@ export default function LoginPage() {
                             className="mx-auto block w-fit">
                             <LogoIcon />
                         </Link>
-                        <h1 className="mb-1 mt-4 text-xl font-semibold">Sign In to Tailark</h1>
-                        <p className="text-sm">Welcome back! Sign in to continue</p>
+                        <h1 className="mb-1 mt-4 text-xl font-semibold">Create a Capture Account</h1>
+                        <p className="text-sm">Welcome! Create an account to get started</p>
                     </div>
 
                     <div className="mt-6 space-y-6">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="firstname"
+                                    className="block text-sm">
+                                    Firstname
+                                </Label>
+                                <Input
+                                    type="text"
+                                    required
+                                    name="firstname"
+                                    id="firstname"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="lastname"
+                                    className="block text-sm">
+                                    Lastname
+                                </Label>
+                                <Input
+                                    type="text"
+                                    required
+                                    name="lastname"
+                                    id="lastname"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label
                                 htmlFor="email"
                                 className="block text-sm">
-                                Username
+                                Email
                             </Label>
                             <Input
                                 type="email"
@@ -87,7 +123,7 @@ export default function LoginPage() {
                                     variant="link"
                                     size="sm">
                                     <Link
-                                        href="/forgot-password"
+                                        href="#"
                                         className="link intent-info variant-ghost text-sm">
                                         Forgot your Password ?
                                     </Link>
@@ -105,7 +141,7 @@ export default function LoginPage() {
                         </div>
 
                         <Button className="w-full" type="submit" disabled={loading}>
-                            {loading ? "Signing in..." : "Sign In"}
+                            {loading ? "Creating Account..." : "Sign Up"}
                         </Button>
                     </div>
 
@@ -122,7 +158,7 @@ export default function LoginPage() {
                             onClick={async () => {
                                 await authClient.signIn.social({
                                     provider: "google",
-                                    callbackURL: callbackUrl
+                                    callbackURL: callbackURL
                                 });
                             }}
                         >
@@ -151,12 +187,12 @@ export default function LoginPage() {
 
                 <div className="p-3">
                     <p className="text-accent-foreground text-center text-sm">
-                        Don't have an account ?
+                        Have an account ?
                         <Button
                             asChild
                             variant="link"
                             className="px-2">
-                            <Link href={callbackUrl ? `/sign-up?callbackUrl=${callbackUrl}` : "/sign-up"}>Create account</Link>
+                            <Link href={callbackURL ? `/sign-in?callbackURL=${callbackURL}` : "/sign-in"}>Sign In</Link>
                         </Button>
                     </p>
                 </div>
@@ -164,3 +200,4 @@ export default function LoginPage() {
         </section>
     )
 }
+

@@ -21,16 +21,14 @@ import {
 import { useCaptureStore } from "@/context";
 import axios from "axios";
 import {
-  Camera,
   Circle,
   Download,
   Pause,
   Play,
   Square,
   Upload,
-  X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type Resolution = { label: string; width: number; height: number };
@@ -59,7 +57,6 @@ export function RecordVideoDialog({
 }: RecordVideoDialogProps) {
   const [state, setState] = useState<RecorderState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [showWebcam, setShowWebcam] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
@@ -86,7 +83,7 @@ export function RecordVideoDialog({
 
   const { addVideo } = useCaptureStore();
 
-  // Probe for supported resolutions
+  // Probe for supported resolutions and audio devices
   useEffect(() => {
     if (!open) return;
 
@@ -97,14 +94,8 @@ export function RecordVideoDialog({
           audio: false,
         });
         const track = stream.getVideoTracks()[0];
-        if (!track) {
-          setSupportedResolutions(CANDIDATE_RESOLUTIONS);
-          setSelectedResolution(CANDIDATE_RESOLUTIONS[5] ?? null); // Default to 1080p
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
         const caps =
-          typeof track.getCapabilities === "function"
+          track && typeof track.getCapabilities === "function"
             ? (track.getCapabilities() as any)
             : {};
         const widthCaps = caps.width;
@@ -142,8 +133,8 @@ export function RecordVideoDialog({
         const devices = await navigator.mediaDevices.enumerateDevices();
         const audios = devices.filter((d) => d.kind === "audioinput");
         setAudioInputs(audios);
-        if (audios.length > 0) {
-          setSelectedAudioId(audios[0]?.deviceId ?? null);
+        if (audios.length > 0 && audios[0]) {
+          setSelectedAudioId(audios[0].deviceId);
         }
       } catch {
         setAudioInputs([]);
@@ -246,8 +237,8 @@ export function RecordVideoDialog({
 
       const combined = new MediaStream();
       displayStream.getVideoTracks().forEach((t) => combined.addTrack(t));
-      const micAudio = micStream?.getAudioTracks()?.[0];
-      const displayAudio = displayStream.getAudioTracks()?.[0];
+      const micAudio = micStream?.getAudioTracks()[0];
+      const displayAudio = displayStream.getAudioTracks()[0];
       if (micAudio) combined.addTrack(micAudio);
       else if (displayAudio) combined.addTrack(displayAudio);
 
@@ -360,27 +351,26 @@ export function RecordVideoDialog({
     }
   };
 
-  const uploadToCloud = useCallback(async () => {
+  const uploadToS3 = useCallback(async () => {
     if (!recordedVideoBlob) return;
 
     setIsUploading(true);
     setUploadProgress(0);
     try {
-      const { data: signature } = await axios.get("/api/cloudinary-signature");
-      const uploadApi = `https://api.cloudinary.com/v1_1/${signature.cloudName}/video/upload`;
+      // 1. Get presigned URL
+      const fileName = `capture-recording-${Date.now()}.webm`;
+      const { data: presignedData } = await axios.get("/api/s3/presigned-url", {
+        params: {
+          fileName,
+          contentType: recordedVideoBlob.type || "video/webm",
+        },
+      });
 
-      const formData = new FormData();
-      formData.append(
-        "file",
-        recordedVideoBlob,
-        `capture-recording-${Date.now()}.webm`
-      );
-      formData.append("api_key", signature.apiKey);
-      formData.append("timestamp", signature.timestamp);
-      formData.append("folder", signature.folder);
-      formData.append("signature", signature.signature);
-
-      const { data: response } = await axios.post(uploadApi, formData, {
+      // 2. Upload directly to S3/R2
+      await axios.put(presignedData.url, recordedVideoBlob, {
+        headers: {
+          "Content-Type": recordedVideoBlob.type || "video/webm",
+        },
         onUploadProgress: (progress) => {
           if (progress.total) {
             const progressPercent = Math.round(
@@ -392,10 +382,15 @@ export function RecordVideoDialog({
       });
 
       toast.info("Creating video record...");
+      
+      // 3. Register video in database
       const videoData = {
-        name: response.original_filename || `capture-recording-${Date.now()}`,
-        description: "Recording from Capture",
-        videoData: response,
+        name: fileName,
+        description: "Recording from Capture Web",
+        path: presignedData.key,
+        duration: isFinite(elapsedMs) ? Math.floor(elapsedMs / 1000) : 0,
+        byteSize: recordedVideoBlob.size,
+        format: recordedVideoBlob.type || "video/webm",
       };
 
       const videoResponse = await axios.post("/api/videos", videoData);
@@ -422,7 +417,7 @@ export function RecordVideoDialog({
     } finally {
       setIsUploading(false);
     }
-  }, [recordedVideoBlob, addVideo, onOpenChange]);
+  }, [recordedVideoBlob, elapsedMs, addVideo, onOpenChange]);
 
   useEffect(() => {
     return () => {
@@ -594,7 +589,7 @@ export function RecordVideoDialog({
       {/* Preview Modal */}
       {showPreview && recordedVideoUrl && (
         <Dialog open={showPreview} onOpenChange={closePreview}>
-          <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader className="shrink-0">
               <DialogTitle>
                 {uploadSuccess
@@ -629,12 +624,13 @@ export function RecordVideoDialog({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="relative bg-black rounded-lg overflow-hidden max-h-48">
+                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video shadow-inner ring-1 ring-white/10">
                     <video
                       src={recordedVideoUrl}
                       controls
                       autoPlay
                       muted
+                      playsInline
                       className="w-full h-full object-contain"
                     >
                       Your browser does not support the video tag.
@@ -656,7 +652,7 @@ export function RecordVideoDialog({
                   Download
                 </Button>
                 <Button
-                  onClick={uploadToCloud}
+                  onClick={uploadToS3}
                   disabled={isUploading}
                   className="flex items-center gap-2 flex-1"
                 >
