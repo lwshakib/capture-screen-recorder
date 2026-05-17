@@ -10,6 +10,12 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card"
 import { Icon } from "@iconify/react"
+import {
+  DOWNLOAD_WINDOWS,
+  DOWNLOAD_MAC,
+  DOWNLOAD_LINUX,
+  DOWNLOAD_CHROME,
+} from "@/lib/constants"
 
 export default function GetAppPage() {
   const extension = {
@@ -17,8 +23,8 @@ export default function GetAppPage() {
     description:
       "Record your browser directly with our lightweight extension. Seamlessly integrated into your daily workflow.",
     icon: <Icon icon="logos:chrome" className="h-10 w-10" />,
-    version: "v1.2.4",
-    link: "#",
+    version: "v1.0.0",
+    link: DOWNLOAD_CHROME,
     type: "Extension",
   }
 
@@ -27,23 +33,23 @@ export default function GetAppPage() {
       title: "Windows App",
       description: "Full-featured desktop recording for Windows 10 and 11.",
       icon: <Icon icon="logos:microsoft-windows-icon" className="h-8 w-8" />,
-      version: "v2.0.1",
-      link: "#",
+      version: "v1.0.0",
+      link: DOWNLOAD_WINDOWS,
     },
     {
       title: "macOS App",
       description: "Optimized recording for Intel and Apple Silicon Macs.",
       icon: <Icon icon="logos:apple" className="h-8 w-8" />,
-      version: "v2.0.1",
-      link: "#",
+      version: "v1.0.0",
+      link: DOWNLOAD_MAC,
     },
     {
       title: "Linux App",
       description:
         "Native AppImage and Deb package for all major distributions.",
       icon: <Icon icon="logos:linux-tux" className="h-8 w-8" />,
-      version: "v2.0.1",
-      link: "#",
+      version: "v1.0.0",
+      link: DOWNLOAD_LINUX,
     },
   ]
 
@@ -82,9 +88,14 @@ export default function GetAppPage() {
                     {extension.description}
                   </CardDescription>
                 </div>
-                <Button className="h-12 shrink-0 rounded-2xl bg-primary px-8 font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90">
-                  <Download className="mr-2 h-4 w-4" />
-                  Install Extension
+                <Button
+                  asChild
+                  className="h-12 shrink-0 rounded-2xl bg-primary px-8 font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90"
+                >
+                  <a href={extension.link}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Install Extension
+                  </a>
                 </Button>
               </div>
             </CardContent>
@@ -120,11 +131,14 @@ export default function GetAppPage() {
                 </CardContent>
                 <div className="p-6 pt-0">
                   <Button
+                    asChild
                     variant="outline"
                     className="h-10 w-full rounded-xl border-accent/20 font-medium transition-colors hover:bg-white/5"
                   >
-                    <Download className="mr-2 h-3.5 w-3.5" />
-                    Download
+                    <a href={app.link}>
+                      <Download className="mr-2 h-3.5 w-3.5" />
+                      Download
+                    </a>
                   </Button>
                 </div>
               </Card>
