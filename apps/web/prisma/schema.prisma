@@ -18,8 +18,8 @@ enum VIDEO_PRIVACY {
 }
 
 enum CHAT_ROLE {
-user
-assistant
+  user
+  assistant
 }
 
 
@@ -29,12 +29,15 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  theme         String    @default("system")
+  defaultPrivacy String   @default("PRIVATE")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
   videos        Video[]
   chatHistories chatHistory[]
+  notifications Notification[]
 
 
   @@unique([email])
@@ -78,49 +81,31 @@ model Account {
 }
 
 model Verification {
-  id         String   @id
+  id         String    @id
   identifier String
   value      String
   expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime?
+  updatedAt  DateTime?
 
-  @@index([identifier])
   @@map("verification")
 }
 
-model VerificationCode {
-  id         String   @id @default(uuid())
-  code       String @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("verificationCode")
-}
-
 model Video {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
   description String?
-  privacy     VIDEO_PRIVACY   @default(PRIVATE)
-  transcript  String?
-  thumbnail   String?
-  chapters   Json?
-  chapters_url String?
-  subtitles_url String? 
+  privacy     VIDEO_PRIVACY @default(PRIVATE)
   duration    Int?
-  cloudinaryPublicId String
-  url         String
-  m3u8Url     String?
+  path        String
   byteSize    Int?
   format      String?
   width       Int?
   height      Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   chatHistories chatHistory[]
 
   @@index([userId])
@@ -142,3 +127,14 @@ model chatHistory {
   @@map("chatHistory")
 }
 
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @default("INFO")
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

@@ -1,6 +1,6 @@
-import FooterSection from "@/components/footer";
-import HeroSection from "@/components/hero-section";
-import Pricing from "@/components/pricing";
+import FooterSection from "@/components/layout/footer";
+import HeroSection from "@/components/marketing/hero-section";
+import Pricing from "@/components/marketing/pricing";
 
 /**
  * Home Page (Landing Page)
@@ -14,3 +14,4 @@ export default function Home() {
     </div>
   );
 }
+
