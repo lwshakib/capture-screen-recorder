@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url"
 import { createRequire } from "node:module"
 import { Readable } from "stream"
 import type { FfmpegCommand } from "fluent-ffmpeg"
+import { autoUpdater } from "electron-updater"
 
 const _require = createRequire(import.meta.url)
 const ffmpeg = _require("fluent-ffmpeg")
@@ -136,6 +137,38 @@ function createTray() {
   })
 }
 
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.allowPrerelease = false
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("Update available:", info.version)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("update:available", info.version)
+    }
+  })
+
+  autoUpdater.on("update-downloaded", (info) => {
+    console.log("Update downloaded:", info.version)
+  })
+
+  autoUpdater.on("error", (err) => {
+    console.error("Error in auto-updater:", err)
+  })
+
+  // Check for updates every 24 hours
+  setInterval(
+    () => {
+      autoUpdater.checkForUpdatesAndNotify()
+    },
+    1000 * 60 * 60 * 24
+  )
+
+  // Initial check
+  autoUpdater.checkForUpdatesAndNotify()
+}
+
 function createWindow() {
   // Create the main browser window for the application
   mainWindow = new BrowserWindow({
@@ -236,6 +269,7 @@ if (!gotTheLock) {
     ffmpeg.setFfmpegPath(ffmpegInstaller.path)
     createWindow()
     createTray()
+    setupAutoUpdater()
   })
 }
 
