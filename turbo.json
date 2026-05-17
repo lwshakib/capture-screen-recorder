@@ -16,6 +16,10 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
+    "release": {
+      "dependsOn": ["^build"],
+      "outputs": ["release/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
