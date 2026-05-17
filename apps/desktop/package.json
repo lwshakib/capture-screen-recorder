@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Desktop screen recording application for Capture.",
   "author": "Capture Team",
   "type": "module",
