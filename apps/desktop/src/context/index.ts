@@ -9,7 +9,6 @@ import { env } from "../lib/env";
  */
 type User = {
   id: string;
-  clerkId: string;
   name: string;
   email: string;
   image: string;
@@ -63,6 +62,7 @@ type RecorderState = {
     isStreamingEnabled: boolean;
     rtmpUrl: string;
     streamKey: string;
+    isCloudUploadEnabled: boolean;
   };
   // Updater for settings with support for functional updates
   setSettings: (
@@ -75,6 +75,7 @@ type RecorderState = {
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         }
       | ((prev: {
           screenId: string | null;
@@ -84,6 +85,7 @@ type RecorderState = {
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         }) => {
           screenId: string | null;
           audioInputId: string | null;
@@ -92,6 +94,7 @@ type RecorderState = {
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         })
   ) => void;
 };
@@ -136,8 +139,8 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
   logout: () => {
     // Clear in-memory state
     set({ user: null, token: null, isUserLoading: false });
-    // Remove persistent token
-    localStorage.removeItem("auth-token-v2");
+    // Remove persistent token from disk
+    window.ipcRenderer.invoke("remove-token");
     // Notify Electron main process to handle backend session cleanup or redirects
     window.ipcRenderer.send("logout");
   },
@@ -236,6 +239,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
     isStreamingEnabled: false,
     rtmpUrl: "rtmp://a.rtmp.youtube.com/live2",
     streamKey: "",
+    isCloudUploadEnabled: true,
   },
 
   // Updates settings, supporting both direct objects and functional updates
@@ -249,6 +253,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         }
       | ((prev: {
           screenId: string | null;
@@ -258,6 +263,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         }) => {
           screenId: string | null;
           audioInputId: string | null;
@@ -266,6 +272,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
           isStreamingEnabled: boolean;
           rtmpUrl: string;
           streamKey: string;
+          isCloudUploadEnabled: boolean;
         })
   ) =>
     set((state) => ({

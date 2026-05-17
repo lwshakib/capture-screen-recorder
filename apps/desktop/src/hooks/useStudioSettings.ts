@@ -9,6 +9,7 @@ interface StudioSettings {
   isStreamingEnabled: boolean;
   rtmpUrl: string;
   streamKey: string;
+  isCloudUploadEnabled: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ export function useStudioSettings() {
     isStreamingEnabled: false,
     rtmpUrl: "rtmp://a.rtmp.youtube.com/live2",
     streamKey: "",
+    isCloudUploadEnabled: true,
   });
 
   useEffect(() => {
