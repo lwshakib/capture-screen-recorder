@@ -209,8 +209,166 @@ export default function HeroSection() {
             </AnimatedGroup>
           </div>
         </section>
-        <section id="solution" className="bg-background py-8">
-          {/* Solution anchor target */}
+        <section id="solution" className="bg-background py-20 md:py-32">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mx-auto max-w-2xl space-y-4 text-center">
+              <h2 className="text-3xl font-semibold text-zinc-900 sm:text-4xl md:text-5xl dark:text-zinc-100">
+                The Complete Recording Solution
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Capture everything that happens on your screen with studio-grade
+                tools built directly into our web platform, desktop apps, and
+                extension.
+              </p>
+            </div>
+
+            <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Feature 1 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <rect width={20} height={14} x={2} y={3} rx={2} />
+                    <path d="M8 21h8M12 17v4" />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  Desktop Recording
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Low-CPU, GPU-accelerated recording apps for Windows, macOS,
+                  and Linux. Perfectly captures high frame-rate desktop games,
+                  tools, and presentations.
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <circle cx={12} cy={12} r={10} />
+                    <circle cx={12} cy={12} r={4} />
+                    <path d="M12 8h8M12 16H4M12 12l4 7M12 12l-7-4" />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  Browser Extension
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Start screen capture instantly from any browser tab with one
+                  click. Ideal for quick debugging, bug reports, and product
+                  design reviews.
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                    <path d="m11.5 10-3 5h5l-3 5" />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  R2 Cloud Backups
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Automated background uploads synchronize local recordings to
+                  ultra-fast R2 cloud storage. Instantly generates sharing and
+                  embed links.
+                </p>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="m22 8-6 4 6 4V8Z" />
+                    <rect width={14} height={12} x={2} y={6} rx={2} />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  Webcam & Audio
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Overlay customizable webcam bubble feeds. Separate system,
+                  microphone, and application audio tracks into isolated
+                  high-fidelity channels.
+                </p>
+              </div>
+
+              {/* Feature 5 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="m12 3-10 5 10 5 10-5-10-5Z" />
+                    <path d="m2 17 10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  Shared Library
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Organize, tag, and search recordings within an interactive
+                  team dashboard. Streamlines developer feedback and knowledge
+                  base management.
+                </p>
+              </div>
+
+              {/* Feature 6 */}
+              <div className="group relative rounded-2xl border bg-zinc-50/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-100/50 dark:bg-zinc-950/20 dark:hover:bg-zinc-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950">
+                  <svg
+                    className="size-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                    <path d="m9 11 2 2 4-4" />
+                  </svg>
+                </div>
+                <h3 className="mt-6 text-xl font-medium text-zinc-900 dark:text-zinc-100">
+                  Enterprise Security
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Bank-grade encryptions protect shared videos. Private links,
+                  expiring sharing permissions, and custom password layers
+                  guarantee total control.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </>

@@ -16,35 +16,38 @@ export default function Pricing() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-            Pricing that Scales with You
+            Pricing Plans for Every Creator
           </h1>
-          <p>
-            Gemini is evolving to be more than just the models. It supports an
-            entire to the APIs and platforms helping developers and businesses
-            innovate.
+          <p className="text-lg text-muted-foreground">
+            Choose the perfect plan to capture, edit, share, and organize all of
+            your high-definition recordings with lightning-fast cloud backups.
           </p>
         </div>
 
         <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-3">
-          <Card className="flex flex-col">
+          {/* Free Plan */}
+          <Card className="flex h-full flex-col">
             <CardHeader>
               <CardTitle className="font-medium">Free</CardTitle>
               <span className="my-3 block text-2xl font-semibold">$0 / mo</span>
-              <CardDescription className="text-sm">Per editor</CardDescription>
+              <CardDescription className="text-sm">
+                Perfect for quick sharing
+              </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="flex-1 space-y-4">
               <hr className="border-dashed" />
-
               <ul className="list-outside space-y-3 text-sm">
                 {[
-                  "Basic Analytics Dashboard",
-                  "5GB Cloud Storage",
-                  "Email and Chat Support",
+                  "5-minute max recording length",
+                  "10GB high-speed cloud storage",
+                  "Standard 720p resolution exports",
+                  "Local MP4 exports & sharing link",
+                  "Browser webcam & audio capture",
                 ].map((item, index) => (
                   <li key={index} className="flex items-center gap-2">
-                    <Check className="size-3" />
-                    {item}
+                    <Check className="size-3 text-zinc-900 dark:text-zinc-100" />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
@@ -52,79 +55,87 @@ export default function Pricing() {
 
             <CardFooter className="mt-auto">
               <Button asChild variant="outline" className="w-full">
-                <Link href="">Get Started</Link>
+                <Link href="/home">Get Started</Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="relative">
-            <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-linear-to-br/increasing from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-white/20 ring-offset-1 ring-offset-gray-950/5 ring-inset">
-              Popular
+          {/* Pro Plan */}
+          <Card className="relative flex h-full flex-col !overflow-visible border-zinc-300 shadow-md ring-1 ring-zinc-200 dark:border-zinc-800 dark:ring-zinc-800">
+            <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white ring-1 ring-zinc-200 dark:bg-zinc-100 dark:text-zinc-950 dark:ring-zinc-800">
+              Most Popular
             </span>
 
-            <div className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="font-medium">Pro</CardTitle>
-                <span className="my-3 block text-2xl font-semibold">
-                  $19 / mo
-                </span>
-                <CardDescription className="text-sm">
-                  Per editor
-                </CardDescription>
-              </CardHeader>
+            <CardHeader>
+              <CardTitle className="font-medium text-zinc-900 dark:text-zinc-100">
+                Pro
+              </CardTitle>
+              <span className="my-3 block text-2xl font-semibold">
+                $12 / mo
+              </span>
+              <CardDescription className="text-sm">
+                For professional creators
+              </CardDescription>
+            </CardHeader>
 
-              <CardContent className="space-y-4">
-                <hr className="border-dashed" />
-                <ul className="list-outside space-y-3 text-sm">
-                  {[
-                    "Everything in Free Plan",
-                    "5GB Cloud Storage",
-                    "Email and Chat Support",
-                    "Access to Community Forum",
-                    "Single User Access",
-                    "Access to Basic Templates",
-                    "Mobile App Access",
-                    "1 Custom Report Per Month",
-                    "Monthly Product Updates",
-                    "Standard Security Features",
-                  ].map((item, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <Check className="size-3" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+            <CardContent className="flex-1 space-y-4">
+              <hr className="border-dashed" />
+              <ul className="list-outside space-y-3 text-sm">
+                {[
+                  "Unlimited recording length",
+                  "250GB premium R2 cloud storage",
+                  "Ultra-HD 4K resolution at 60fps",
+                  "Dual track system & microphone audio",
+                  "Native macOS, Windows & Linux apps",
+                  "Chrome Extension fully unlocked",
+                  "Custom player branding & styling",
+                  "High-speed direct link sharing",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <Check className="size-3 text-zinc-900 dark:text-zinc-100" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
 
-              <CardFooter>
-                <Button asChild className="w-full">
-                  <Link href="">Get Started</Link>
-                </Button>
-              </CardFooter>
-            </div>
+            <CardFooter className="mt-auto">
+              <Button
+                asChild
+                className="w-full border-0 bg-zinc-900 font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              >
+                <Link href="/home">Upgrade to Pro</Link>
+              </Button>
+            </CardFooter>
           </Card>
 
-          <Card className="flex flex-col">
+          {/* Teams Plan */}
+          <Card className="flex h-full flex-col">
             <CardHeader>
-              <CardTitle className="font-medium">Startup</CardTitle>
+              <CardTitle className="font-medium">Teams</CardTitle>
               <span className="my-3 block text-2xl font-semibold">
                 $29 / mo
               </span>
-              <CardDescription className="text-sm">Per editor</CardDescription>
+              <CardDescription className="text-sm">
+                For collaborative teams
+              </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="flex-1 space-y-4">
               <hr className="border-dashed" />
-
               <ul className="list-outside space-y-3 text-sm">
                 {[
                   "Everything in Pro Plan",
-                  "5GB Cloud Storage",
-                  "Email and Chat Support",
+                  "Unlimited collaborative cloud storage",
+                  "Multi-user shared team video library",
+                  "Custom domain sharing pages",
+                  "Advanced team analytics dashboard",
+                  "Custom SSO & SAML authentication",
+                  "Dedicated account manager",
                 ].map((item, index) => (
                   <li key={index} className="flex items-center gap-2">
-                    <Check className="size-3" />
-                    {item}
+                    <Check className="size-3 text-zinc-900 dark:text-zinc-100" />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
@@ -132,7 +143,7 @@ export default function Pricing() {
 
             <CardFooter className="mt-auto">
               <Button asChild variant="outline" className="w-full">
-                <Link href="">Get Started</Link>
+                <Link href="/home">Contact Sales</Link>
               </Button>
             </CardFooter>
           </Card>
