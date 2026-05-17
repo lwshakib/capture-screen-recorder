@@ -467,30 +467,27 @@ export default function MediaConfiguration() {
                     />
                   </div>
 
-                  {/* Render streaming inputs only if toggle is ON */}
-                  {settings.isStreamingEnabled && (
-                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
-                        <Input
-                          placeholder="rtmp://a.rtmp.youtube.com/live2"
-                          value={settings.rtmpUrl}
-                          onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
-                        <Input
-                          type="password"
-                          placeholder="Enter your stream key"
-                          value={settings.streamKey}
-                          onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
-                          className="h-8 text-xs"
-                        />
-                      </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
+                      <Input
+                        placeholder="rtmp://a.rtmp.youtube.com/live2"
+                        value={settings.rtmpUrl}
+                        onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
+                        className="h-8 text-xs"
+                      />
                     </div>
-                  )}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
+                      <Input
+                        type="password"
+                        placeholder="Enter your stream key"
+                        value={settings.streamKey}
+                        onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
