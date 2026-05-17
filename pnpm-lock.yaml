@@ -105,6 +105,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       electron-updater:
         specifier: ^6.8.3
         version: 6.8.3
