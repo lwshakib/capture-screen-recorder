@@ -1,39 +1,35 @@
-"use client";
+"use client"
 
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { Label } from "@workspace/ui/components/label";
-import { Progress } from "@workspace/ui/components/progress";
-import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
+} from "@workspace/ui/components/dialog"
+import { Label } from "@workspace/ui/components/label"
+import { Progress } from "@workspace/ui/components/progress"
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@workspace/ui/components/radio-group"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
-import { useCaptureStore } from "@/context";
-import axios from "axios";
-import {
-  Circle,
-  Download,
-  Pause,
-  Play,
-  Square,
-  Upload,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+} from "@workspace/ui/components/select"
+import { useCaptureStore } from "@/context"
+import axios from "axios"
+import { Circle, Download, Pause, Play, Square, Upload } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 
-type Resolution = { label: string; width: number; height: number };
+type Resolution = { label: string; width: number; height: number }
 
-type RecorderState = "idle" | "recording" | "paused";
+type RecorderState = "idle" | "recording" | "paused"
 
 const CANDIDATE_RESOLUTIONS: Resolution[] = [
   { label: "144p (256×144)", width: 256, height: 144 },
@@ -44,175 +40,175 @@ const CANDIDATE_RESOLUTIONS: Resolution[] = [
   { label: "1080p (1920×1080)", width: 1920, height: 1080 },
   { label: "1440p (2560×1440)", width: 2560, height: 1440 },
   { label: "2160p (3840×2160)", width: 3840, height: 2160 },
-];
+]
 
 interface RecordVideoDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function RecordVideoDialog({
   open,
   onOpenChange,
 }: RecordVideoDialogProps) {
-  const [state, setState] = useState<RecorderState>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
-  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
+  const [state, setState] = useState<RecorderState>("idle")
+  const [error, setError] = useState<string | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null)
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null)
 
   const [supportedResolutions, setSupportedResolutions] = useState<
     Resolution[]
-  >([]);
+  >([])
   const [selectedResolution, setSelectedResolution] =
-    useState<Resolution | null>(null);
-  const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null);
+    useState<Resolution | null>(null)
+  const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([])
+  const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null)
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<BlobPart[]>([]);
-  const combinedStreamRef = useRef<MediaStream | null>(null);
-  const timerIntervalRef = useRef<number | null>(null);
-  const startedAtRef = useRef<number | null>(null);
-  const accumulatedMsRef = useRef<number>(0);
-  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<BlobPart[]>([])
+  const combinedStreamRef = useRef<MediaStream | null>(null)
+  const timerIntervalRef = useRef<number | null>(null)
+  const startedAtRef = useRef<number | null>(null)
+  const accumulatedMsRef = useRef<number>(0)
+  const [elapsedMs, setElapsedMs] = useState<number>(0)
 
-  const { addVideo } = useCaptureStore();
+  const { addVideo } = useCaptureStore()
 
   // Probe for supported resolutions and audio devices
   useEffect(() => {
-    if (!open) return;
+    if (!open) return
 
     const probe = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
-        });
-        const track = stream.getVideoTracks()[0];
+        })
+        const track = stream.getVideoTracks()[0]
         const caps =
           track && typeof track.getCapabilities === "function"
             ? (track.getCapabilities() as any)
-            : {};
-        const widthCaps = caps.width;
-        const heightCaps = caps.height;
-        stream.getTracks().forEach((t) => t.stop());
+            : {}
+        const widthCaps = caps.width
+        const heightCaps = caps.height
+        stream.getTracks().forEach((t) => t.stop())
 
         if (widthCaps && heightCaps) {
-          const minW = widthCaps.min ?? 0;
-          const maxW = widthCaps.max ?? Number.MAX_SAFE_INTEGER;
-          const minH = heightCaps.min ?? 0;
-          const maxH = heightCaps.max ?? Number.MAX_SAFE_INTEGER;
+          const minW = widthCaps.min ?? 0
+          const maxW = widthCaps.max ?? Number.MAX_SAFE_INTEGER
+          const minH = heightCaps.min ?? 0
+          const maxH = heightCaps.max ?? Number.MAX_SAFE_INTEGER
           const filtered = CANDIDATE_RESOLUTIONS.filter(
             (r) =>
               r.width >= minW &&
               r.width <= maxW &&
               r.height >= minH &&
               r.height <= maxH
-          ).sort((a, b) => a.width - b.width);
-          setSupportedResolutions(filtered);
+          ).sort((a, b) => a.width - b.width)
+          setSupportedResolutions(filtered)
           setSelectedResolution(
             filtered[filtered.length - 1] ?? filtered[0] ?? null
-          );
+          )
         } else {
-          setSupportedResolutions(CANDIDATE_RESOLUTIONS);
-          setSelectedResolution(CANDIDATE_RESOLUTIONS[5] ?? null); // Default to 1080p
+          setSupportedResolutions(CANDIDATE_RESOLUTIONS)
+          setSelectedResolution(CANDIDATE_RESOLUTIONS[5] ?? null) // Default to 1080p
         }
       } catch {
-        setSupportedResolutions(CANDIDATE_RESOLUTIONS);
-        setSelectedResolution(CANDIDATE_RESOLUTIONS[5] ?? null); // Default to 1080p
+        setSupportedResolutions(CANDIDATE_RESOLUTIONS)
+        setSelectedResolution(CANDIDATE_RESOLUTIONS[5] ?? null) // Default to 1080p
       }
-    };
+    }
 
     const enumerate = async () => {
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audios = devices.filter((d) => d.kind === "audioinput");
-        setAudioInputs(audios);
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const audios = devices.filter((d) => d.kind === "audioinput")
+        setAudioInputs(audios)
         if (audios.length > 0 && audios[0]) {
-          setSelectedAudioId(audios[0].deviceId);
+          setSelectedAudioId(audios[0].deviceId)
         }
       } catch {
-        setAudioInputs([]);
+        setAudioInputs([])
       }
-    };
+    }
 
-    probe();
-    enumerate();
-  }, [open]);
+    probe()
+    enumerate()
+  }, [open])
 
   const formatElapsed = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    const hh = hours > 0 ? String(hours).padStart(2, "0") + ":" : "";
-    const mm = String(minutes).padStart(2, "0");
-    const ss = String(seconds).padStart(2, "0");
-    return `${hh}${mm}:${ss}`;
-  };
+    const totalSeconds = Math.floor(ms / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+    const hh = hours > 0 ? String(hours).padStart(2, "0") + ":" : ""
+    const mm = String(minutes).padStart(2, "0")
+    const ss = String(seconds).padStart(2, "0")
+    return `${hh}${mm}:${ss}`
+  }
 
   const startTimer = () => {
-    if (timerIntervalRef.current) return;
-    startedAtRef.current = Date.now();
+    if (timerIntervalRef.current) return
+    startedAtRef.current = Date.now()
     const tick = () => {
-      const now = Date.now();
-      const running = startedAtRef.current ? now - startedAtRef.current : 0;
-      setElapsedMs(accumulatedMsRef.current + running);
-    };
-    tick();
+      const now = Date.now()
+      const running = startedAtRef.current ? now - startedAtRef.current : 0
+      setElapsedMs(accumulatedMsRef.current + running)
+    }
+    tick()
     timerIntervalRef.current = window.setInterval(
       tick,
       200
-    ) as unknown as number;
-  };
+    ) as unknown as number
+  }
 
   const pauseTimer = () => {
     if (startedAtRef.current) {
-      accumulatedMsRef.current += Date.now() - startedAtRef.current;
-      startedAtRef.current = null;
+      accumulatedMsRef.current += Date.now() - startedAtRef.current
+      startedAtRef.current = null
     }
     if (timerIntervalRef.current) {
-      window.clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
+      window.clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
     }
-    setElapsedMs(accumulatedMsRef.current);
-  };
+    setElapsedMs(accumulatedMsRef.current)
+  }
 
   const resetTimer = () => {
     if (timerIntervalRef.current) {
-      window.clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
+      window.clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
     }
-    startedAtRef.current = null;
-    accumulatedMsRef.current = 0;
-    setElapsedMs(0);
-  };
+    startedAtRef.current = null
+    accumulatedMsRef.current = 0
+    setElapsedMs(0)
+  }
 
   const cleanupStreams = () => {
     if (combinedStreamRef.current) {
       combinedStreamRef.current.getTracks().forEach((track) => {
-        track.stop();
-      });
-      combinedStreamRef.current = null;
+        track.stop()
+      })
+      combinedStreamRef.current = null
     }
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
     ) {
       try {
-        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stop()
       } catch {}
-      mediaRecorderRef.current = null;
+      mediaRecorderRef.current = null
     }
-  };
+  }
 
   const startRecording = async () => {
-    setError(null);
+    setError(null)
     try {
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
@@ -221,150 +217,150 @@ export function RecordVideoDialog({
           height: selectedResolution?.height,
         } as MediaTrackConstraints,
         audio: true,
-      });
+      })
 
-      let micStream: MediaStream | null = null;
+      let micStream: MediaStream | null = null
       if (selectedAudioId) {
         try {
           micStream = await navigator.mediaDevices.getUserMedia({
             audio: { deviceId: { exact: selectedAudioId } },
             video: false,
-          });
+          })
         } catch {
           // Ignore mic errors, proceed with display audio only
         }
       }
 
-      const combined = new MediaStream();
-      displayStream.getVideoTracks().forEach((t) => combined.addTrack(t));
-      const micAudio = micStream?.getAudioTracks()[0];
-      const displayAudio = displayStream.getAudioTracks()[0];
-      if (micAudio) combined.addTrack(micAudio);
-      else if (displayAudio) combined.addTrack(displayAudio);
+      const combined = new MediaStream()
+      displayStream.getVideoTracks().forEach((t) => combined.addTrack(t))
+      const micAudio = micStream?.getAudioTracks()[0]
+      const displayAudio = displayStream.getAudioTracks()[0]
+      if (micAudio) combined.addTrack(micAudio)
+      else if (displayAudio) combined.addTrack(displayAudio)
 
-      combinedStreamRef.current = combined;
+      combinedStreamRef.current = combined
 
       const mimeType =
         [
           "video/webm;codecs=vp9,opus",
           "video/webm;codecs=vp8,opus",
           "video/webm",
-        ].find((t) => MediaRecorder.isTypeSupported(t)) || "";
+        ].find((t) => MediaRecorder.isTypeSupported(t)) || ""
 
       const recorder = new MediaRecorder(
         combined,
         mimeType ? { mimeType } : undefined
-      );
-      mediaRecorderRef.current = recorder;
-      recordedChunksRef.current = [];
+      )
+      mediaRecorderRef.current = recorder
+      recordedChunksRef.current = []
 
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data);
-      };
+        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
       recorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, {
           type: recorder.mimeType || "video/webm",
-        });
+        })
 
-        setRecordedVideoBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setRecordedVideoUrl(url);
-        setShowPreview(true);
+        setRecordedVideoBlob(blob)
+        const url = URL.createObjectURL(blob)
+        setRecordedVideoUrl(url)
+        setShowPreview(true)
 
-        cleanupStreams();
-        setState("idle");
-        resetTimer();
-      };
+        cleanupStreams()
+        setState("idle")
+        resetTimer()
+      }
 
-      const videoTrack = displayStream.getVideoTracks()[0];
+      const videoTrack = displayStream.getVideoTracks()[0]
       if (videoTrack) {
         videoTrack.onended = () => {
           if (recorder.state !== "inactive") {
-            recorder.stop();
+            recorder.stop()
           }
-          cleanupStreams();
-          setState("idle");
-          resetTimer();
-        };
+          cleanupStreams()
+          setState("idle")
+          resetTimer()
+        }
       }
 
-      recorder.start(200);
-      setState("recording");
-      startTimer();
+      recorder.start(200)
+      setState("recording")
+      startTimer()
     } catch (e: any) {
-      setError(e?.message || "Failed to start recording");
-      cleanupStreams();
-      setState("idle");
+      setError(e?.message || "Failed to start recording")
+      cleanupStreams()
+      setState("idle")
     }
-  };
+  }
 
   const stopRecording = () => {
-    const rec = mediaRecorderRef.current;
+    const rec = mediaRecorderRef.current
     if (rec && rec.state !== "inactive") {
-      rec.stop();
+      rec.stop()
     }
-    cleanupStreams();
-    resetTimer();
-    setState("idle");
-  };
+    cleanupStreams()
+    resetTimer()
+    setState("idle")
+  }
 
   const pauseRecording = () => {
-    const rec = mediaRecorderRef.current;
+    const rec = mediaRecorderRef.current
     if (rec && rec.state === "recording") {
-      rec.pause();
-      setState("paused");
-      pauseTimer();
+      rec.pause()
+      setState("paused")
+      pauseTimer()
     }
-  };
+  }
 
   const resumeRecording = () => {
-    const rec = mediaRecorderRef.current;
+    const rec = mediaRecorderRef.current
     if (rec && rec.state === "paused") {
-      rec.resume();
-      setState("recording");
-      startTimer();
+      rec.resume()
+      setState("recording")
+      startTimer()
     }
-  };
+  }
 
   const closePreview = () => {
-    setShowPreview(false);
+    setShowPreview(false)
     if (recordedVideoUrl) {
-      URL.revokeObjectURL(recordedVideoUrl);
-      setRecordedVideoUrl(null);
+      URL.revokeObjectURL(recordedVideoUrl)
+      setRecordedVideoUrl(null)
     }
-    setRecordedVideoBlob(null);
-    setUploadSuccess(false);
-    setUploadedVideoId(null);
-    setUploadProgress(0);
-  };
+    setRecordedVideoBlob(null)
+    setUploadSuccess(false)
+    setUploadedVideoId(null)
+    setUploadProgress(0)
+  }
 
   const downloadVideo = () => {
     if (recordedVideoBlob) {
-      const url = URL.createObjectURL(recordedVideoBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `capture-recording-${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(recordedVideoBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `capture-recording-${Date.now()}.webm`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
     }
-  };
+  }
 
   const uploadToS3 = useCallback(async () => {
-    if (!recordedVideoBlob) return;
+    if (!recordedVideoBlob) return
 
-    setIsUploading(true);
-    setUploadProgress(0);
+    setIsUploading(true)
+    setUploadProgress(0)
     try {
       // 1. Get presigned URL
-      const fileName = `capture-recording-${Date.now()}.webm`;
+      const fileName = `capture-recording-${Date.now()}.webm`
       const { data: presignedData } = await axios.get("/api/s3/presigned-url", {
         params: {
           fileName,
           contentType: recordedVideoBlob.type || "video/webm",
         },
-      });
+      })
 
       // 2. Upload directly to S3/R2
       await axios.put(presignedData.url, recordedVideoBlob, {
@@ -375,14 +371,14 @@ export function RecordVideoDialog({
           if (progress.total) {
             const progressPercent = Math.round(
               (progress.loaded * 100) / progress.total
-            );
-            setUploadProgress(progressPercent);
+            )
+            setUploadProgress(progressPercent)
           }
         },
-      });
+      })
 
-      toast.info("Creating video record...");
-      
+      toast.info("Creating video record...")
+
       // 3. Register video in database
       const videoData = {
         name: fileName,
@@ -391,45 +387,45 @@ export function RecordVideoDialog({
         duration: isFinite(elapsedMs) ? Math.floor(elapsedMs / 1000) : 0,
         byteSize: recordedVideoBlob.size,
         format: recordedVideoBlob.type || "video/webm",
-      };
+      }
 
-      const videoResponse = await axios.post("/api/videos", videoData);
+      const videoResponse = await axios.post("/api/videos", videoData)
 
       if (videoResponse.data.newVideo) {
-        addVideo(videoResponse.data.newVideo);
-        setUploadedVideoId(videoResponse.data.newVideo.id);
-        setUploadSuccess(true);
+        addVideo(videoResponse.data.newVideo)
+        setUploadedVideoId(videoResponse.data.newVideo.id)
+        setUploadSuccess(true)
         toast.success(
           "Video uploaded successfully! Processing will begin shortly."
-        );
+        )
 
         // Close dialog after a short delay
         setTimeout(() => {
-          closePreview();
-          onOpenChange(false);
-        }, 2000);
+          closePreview()
+          onOpenChange(false)
+        }, 2000)
       }
     } catch (error: any) {
-      console.error("Upload error:", error);
+      console.error("Upload error:", error)
       toast.error(
         error?.response?.data?.error || "Upload failed. Please try again."
-      );
+      )
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  }, [recordedVideoBlob, elapsedMs, addVideo, onOpenChange]);
+  }, [recordedVideoBlob, elapsedMs, addVideo, onOpenChange])
 
   useEffect(() => {
     return () => {
-      cleanupStreams();
+      cleanupStreams()
       if (timerIntervalRef.current) {
-        window.clearInterval(timerIntervalRef.current);
+        window.clearInterval(timerIntervalRef.current)
       }
       if (recordedVideoUrl) {
-        URL.revokeObjectURL(recordedVideoUrl);
+        URL.revokeObjectURL(recordedVideoUrl)
       }
-    };
-  }, [recordedVideoUrl]);
+    }
+  }, [recordedVideoUrl])
 
   const handleClose = useCallback(() => {
     if (state !== "idle") {
@@ -438,13 +434,13 @@ export function RecordVideoDialog({
           "Recording in progress. Are you sure you want to stop and close?"
         )
       ) {
-        stopRecording();
-        onOpenChange(false);
+        stopRecording()
+        onOpenChange(false)
       }
     } else {
-      onOpenChange(false);
+      onOpenChange(false)
     }
-  }, [state, onOpenChange]);
+  }, [state, onOpenChange])
 
   return (
     <>
@@ -468,28 +464,28 @@ export function RecordVideoDialog({
                     : undefined
                 }
                 onValueChange={(value) => {
-                  const [width, height] = value.split("x").map(Number);
+                  const [width, height] = value.split("x").map(Number)
                   const res = supportedResolutions.find(
                     (r) => r.width === width && r.height === height
-                  );
-                  if (res) setSelectedResolution(res);
+                  )
+                  if (res) setSelectedResolution(res)
                 }}
                 disabled={state !== "idle"}
               >
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
                   {supportedResolutions.map((res) => {
-                    const val = `${res.width}x${res.height}`;
+                    const val = `${res.width}x${res.height}`
                     return (
                       <div key={val} className="flex items-center space-x-2">
                         <RadioGroupItem value={val} id={val} />
                         <Label
                           htmlFor={val}
-                          className="cursor-pointer font-normal text-sm"
+                          className="cursor-pointer text-sm font-normal"
                         >
                           {res.label}
                         </Label>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </RadioGroup>
@@ -523,7 +519,7 @@ export function RecordVideoDialog({
             </div>
 
             {/* Recording Controls */}
-            <div className="flex items-center justify-center gap-4 pt-4 border-t">
+            <div className="flex items-center justify-center gap-4 border-t pt-4">
               {state === "idle" && (
                 <Button
                   onClick={startRecording}
@@ -538,8 +534,8 @@ export function RecordVideoDialog({
 
               {state !== "idle" && (
                 <>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 rounded-lg">
-                    <div className="h-2 w-2 bg-destructive rounded-full animate-pulse" />
+                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-destructive" />
                     <span className="font-mono text-sm">
                       {formatElapsed(elapsedMs)}
                     </span>
@@ -578,7 +574,7 @@ export function RecordVideoDialog({
             </div>
 
             {error && (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -589,21 +585,21 @@ export function RecordVideoDialog({
       {/* Preview Modal */}
       {showPreview && recordedVideoUrl && (
         <Dialog open={showPreview} onOpenChange={closePreview}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
             <DialogHeader className="shrink-0">
               <DialogTitle>
                 {uploadSuccess
                   ? "Upload Complete!"
                   : isUploading
-                  ? "Uploading..."
-                  : "Recording Complete"}
+                    ? "Uploading..."
+                    : "Recording Complete"}
               </DialogTitle>
             </DialogHeader>
 
             <div className="flex-1 overflow-y-auto">
               {uploadSuccess ? (
-                <div className="py-6 text-center space-y-4">
-                  <div className="mx-auto w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="space-y-4 py-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500">
                     <span className="text-xl text-white">✓</span>
                   </div>
                   <h4 className="text-base font-semibold">
@@ -616,7 +612,7 @@ export function RecordVideoDialog({
                   </p>
                 </div>
               ) : isUploading ? (
-                <div className="py-6 space-y-4">
+                <div className="space-y-4 py-6">
                   <Progress value={uploadProgress} className="h-2" />
                   <p className="text-center text-sm text-muted-foreground">
                     Uploading your recording... {uploadProgress}%
@@ -624,14 +620,14 @@ export function RecordVideoDialog({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video shadow-inner ring-1 ring-white/10">
+                  <div className="relative aspect-video overflow-hidden rounded-xl bg-black shadow-inner ring-1 ring-white/10">
                     <video
                       src={recordedVideoUrl}
                       controls
                       autoPlay
                       muted
                       playsInline
-                      className="w-full h-full object-contain"
+                      className="h-full w-full object-contain"
                     >
                       Your browser does not support the video tag.
                     </video>
@@ -641,12 +637,12 @@ export function RecordVideoDialog({
             </div>
 
             {!uploadSuccess && !isUploading && (
-              <div className="flex items-center gap-3 pt-4 border-t shrink-0">
+              <div className="flex shrink-0 items-center gap-3 border-t pt-4">
                 <Button
                   variant="outline"
                   onClick={downloadVideo}
                   disabled={isUploading}
-                  className="flex items-center gap-2 flex-1"
+                  className="flex flex-1 items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
                   Download
@@ -654,7 +650,7 @@ export function RecordVideoDialog({
                 <Button
                   onClick={uploadToS3}
                   disabled={isUploading}
-                  className="flex items-center gap-2 flex-1"
+                  className="flex flex-1 items-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   Upload to Cloud
@@ -665,5 +661,5 @@ export function RecordVideoDialog({
         </Dialog>
       )}
     </>
-  );
+  )
 }

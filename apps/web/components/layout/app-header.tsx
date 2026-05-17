@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { SidebarTrigger } from "@workspace/ui/components/sidebar"
 import { Separator } from "@workspace/ui/components/separator"
@@ -17,26 +17,26 @@ export function AppHeader() {
   const { data: session } = authClient.useSession()
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 bg-background/80 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 justify-between border-b border-border/40 px-4">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-4 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="-ml-2 h-9 w-9" />
         <Separator orientation="vertical" className="h-6 opacity-20" />
         <SearchInput />
       </div>
       <div className="flex items-center gap-3">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-2 h-9 w-9 md:w-auto md:px-3 rounded-xl border-accent/20 p-0 md:p-3"
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex h-9 w-9 items-center gap-2 rounded-xl border-accent/20 p-0 md:w-auto md:p-3 md:px-3"
           onClick={() => setIsUploadDialogOpen(true)}
         >
           <Upload className="h-4 w-4 shrink-0" />
           <span className="hidden md:inline">Upload Video</span>
         </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-2 h-9 w-9 md:w-auto md:px-3 rounded-xl border-accent/20 p-0 md:p-3" 
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex h-9 w-9 items-center gap-2 rounded-xl border-accent/20 p-0 md:w-auto md:p-3 md:px-3"
           onClick={() => setIsRecordDialogOpen(true)}
         >
           <Video className="h-4 w-4 shrink-0" />
@@ -55,5 +55,3 @@ export function AppHeader() {
     </header>
   )
 }
-
-

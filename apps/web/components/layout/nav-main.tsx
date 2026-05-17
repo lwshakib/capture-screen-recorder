@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { type LucideIcon } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { type LucideIcon } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import {
   SidebarGroup,
@@ -10,26 +10,26 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@workspace/ui/components/sidebar";
+} from "@workspace/ui/components/sidebar"
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-  }[];
+    title: string
+    url: string
+    icon?: LucideIcon
+    isActive?: boolean
+  }[]
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Screen Recorder</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const isActive = pathname === item.url;
+          const isActive = pathname === item.url
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
@@ -47,10 +47,9 @@ export function NavMain({
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          );
+          )
         })}
       </SidebarMenu>
     </SidebarGroup>
-  );
+  )
 }
-

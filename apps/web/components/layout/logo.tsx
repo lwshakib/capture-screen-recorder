@@ -1,9 +1,9 @@
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@workspace/ui/lib/utils"
 
 type LogoIconProps = {
-  className?: string;
-  color?: string;
-};
+  className?: string
+  color?: string
+}
 
 export const Logo = ({ className, color }: LogoIconProps) => {
   return (
@@ -11,8 +11,8 @@ export const Logo = ({ className, color }: LogoIconProps) => {
       <LogoIcon className={className} color={color} />
       <span className="ml-2 text-2xl font-bold">Capture</span>
     </div>
-  );
-};
+  )
+}
 
 export const LogoIcon = ({
   className,
@@ -55,5 +55,5 @@ export const LogoIcon = ({
         <path d="m35.3721 25.9507v8.0487l-9.9698-5.756v-2.2927z" opacity=".4" />
       </g>
     </svg>
-  );
-};
+  )
+}
