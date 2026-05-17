@@ -473,6 +473,7 @@ export default function StudioApp() {
           window.ipcRenderer.send("save-recording", {
             data: new Uint8Array(arrayBuffer),
             filename,
+            isCloudUploadEnabled: settings?.isCloudUploadEnabled ?? true,
           });
           chunksRef.current = [];
 
@@ -731,6 +732,7 @@ export default function StudioApp() {
                   window.ipcRenderer.send("save-recording", {
                     data: new Uint8Array(arrayBuffer),
                     filename,
+                    isCloudUploadEnabled: settings?.isCloudUploadEnabled ?? true,
                   });
                   chunksRef.current = [];
 

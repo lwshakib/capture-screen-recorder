@@ -4,7 +4,6 @@ import React, { useCallback, useRef, useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Progress } from "@workspace/ui/components/progress";
 import { httpClient } from "./lib/httpClient";
-import { getCloudinarySignature } from "@/lib/utils";
 import { logger } from "./lib/logger";
 
 // Interface for tracking the upload status
@@ -74,44 +73,40 @@ export default function UploadApp() {
           filename: filename,
         });
 
-        // Step 1: Get Cloudinary signature using utility function
-        // This is required for secure authentication with Cloudinary
-        const signatureData = await getCloudinarySignature();
+        // Step 1: Get S3 presigned URL
+        const authToken = (await window.ipcRenderer.invoke("get-token")) as string;
+        if (!authToken) {
+          throw new Error("Authentication token not found. Please sign in first.");
+        }
+        const cleanToken = authToken.replace(/^["']+|["']+$/g, "");
 
-        // Step 2: Prepare form data for Cloudinary upload
-        const formData = new FormData();
-        formData.append(
-          "file",
-          videoBlob,
-          `capture-recording-${Date.now()}.webm`
-        );
-        formData.append("signature", signatureData.signature);
-        formData.append("timestamp", signatureData.timestamp.toString());
-        formData.append("folder", signatureData.folder);
-        formData.append("api_key", signatureData.apiKey);
-        formData.append("cloud_name", signatureData.cloudName);
+        const s3FileName = filename || `capture-recording-${Date.now()}.webm`;
+        const { data: s3Data } = await httpClient.get("/api/s3/presigned-url", {
+          params: {
+            fileName: s3FileName,
+            contentType: videoBlob.type || "video/webm",
+          },
+          headers: {
+            Authorization: `Bearer ${cleanToken}`,
+          },
+        });
 
-        // Step 3: Upload to Cloudinary via HTTP POST
-        const uploadResponse = await axios.post(
-          `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/video/upload`,
-          formData,
-          {
-            onUploadProgress: (progressEvent) => {
-              // Update progress bar
-              if (progressEvent.total) {
-                const progress = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-                );
-                setUploadState((prev) => ({ ...prev, progress }));
-              }
-            },
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        // Step 2: Upload directly to S3
+        await axios.put(s3Data.url, videoBlob, {
+          headers: {
+            "Content-Type": videoBlob.type || "video/webm",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadState((prev) => ({ ...prev, progress }));
+            }
+          },
+        });
 
-        // Step 4: Handle successful upload
+        // Step 3: Handle successful upload
         setUploadState({
           isUploading: false,
           progress: 100,
@@ -120,17 +115,7 @@ export default function UploadApp() {
           filename: filename,
         });
 
-        // Step 5: Register the video in our backend database
-        // Get auth token for videos API
-        const authToken = localStorage.getItem("auth-token-v2");
-        if (!authToken) {
-          throw new Error("Authentication token not found for videos API");
-        }
-
-        // Clean the token (remove potential extra quotes)
-        const cleanToken = authToken.replace(/^["']+|["']+$/g, "");
-
-        // Send metadata to backend
+        // Step 4: Register the video in our backend database
         const res = await httpClient.post(
           "/api/token/videos",
           {
@@ -138,14 +123,12 @@ export default function UploadApp() {
             description:
               filename ||
               `Screen recording uploaded at ${new Date().toLocaleString()}`,
-            cloudinaryPublicId: uploadResponse.data.public_id,
-            url: uploadResponse.data.secure_url,
-            m3u8Url: uploadResponse.data.playback_url,
-            width: uploadResponse.data.width,
-            height: uploadResponse.data.height,
-            byteSize: uploadResponse.data.bytes,
-            duration: uploadResponse.data.duration,
-            format: uploadResponse.data.format,
+            path: s3Data.key,
+            width: null, // Desktop app doesn't always know dimensions here easily
+            height: null,
+            byteSize: videoBlob.size,
+            duration: null, // Duration is often added after processing or by web app
+            format: videoBlob.type || "video/webm",
           },
           {
             headers: {
@@ -156,7 +139,7 @@ export default function UploadApp() {
 
         logger.info("Video record created", { recordId: res.data.id });
 
-        // Open the video URL in the browser/app user interface
+        // Open the video URL in the browser
         if (res.data.redirectUrl) {
           const videoUrl = res.data.redirectUrl;
           logger.info("Opening video URL", { videoUrl });
@@ -164,7 +147,7 @@ export default function UploadApp() {
         }
 
         logger.info("Upload successful", {
-          publicId: uploadResponse.data.public_id,
+          path: s3Data.key,
         });
 
       } catch (error) {
