@@ -73,23 +73,23 @@ export default function MediaConfiguration() {
 
     try {
       await Promise.all([
-        getScreens().catch((error) => {
+        getScreens().catch((error: any) => {
           logger.error("Failed to get screens", error)
-          setErrors((prev) => ({
+          setErrors((prev: any) => ({
             ...prev,
             screens: "Failed to load screen sources",
           }))
         }),
-        getAudioInputs().catch((error) => {
+        getAudioInputs().catch((error: any) => {
           logger.error("Failed to get audio inputs", error)
-          setErrors((prev) => ({
+          setErrors((prev: any) => ({
             ...prev,
             audio: "Failed to load audio devices",
           }))
         }),
-        getSupportedResolutions().catch((error) => {
+        getSupportedResolutions().catch((error: any) => {
           logger.error("Failed to get supported resolutions", error)
-          setErrors((prev) => ({
+          setErrors((prev: any) => ({
             ...prev,
             general: "Failed to load supported resolutions",
           }))
@@ -99,7 +99,10 @@ export default function MediaConfiguration() {
       setLastRefreshTime(new Date())
     } catch (error) {
       logger.error("Refresh failed", error)
-      setErrors((prev) => ({ ...prev, general: "Failed to refresh devices" }))
+      setErrors((prev: any) => ({
+        ...prev,
+        general: "Failed to refresh devices",
+      }))
     } finally {
       setIsRefreshing(false)
     }
@@ -115,7 +118,7 @@ export default function MediaConfiguration() {
   useEffect(() => {
     window.ipcRenderer.invoke("get-settings").then((savedSettings) => {
       if (savedSettings) {
-        setSettings((prev) => ({
+        setSettings((prev: any) => ({
           ...prev,
           ...savedSettings,
           isStreamingEnabled: false, // Ensure live stream is always false on startup (per user request)
@@ -127,9 +130,11 @@ export default function MediaConfiguration() {
   // Effect: Set a default Screen Source if none is selected
   useEffect(() => {
     if (screens.length > 0 && !settings.screenId) {
-      const defaultScreen = screens.find((screen) => screen.id) || screens[0]
+      const defaultScreen =
+        screens.find((screen: Electron.DesktopCapturerSource) => screen.id) ||
+        screens[0]
       if (defaultScreen) {
-        setSettings((prev) => ({ ...prev, screenId: defaultScreen.id }))
+        setSettings((prev: any) => ({ ...prev, screenId: defaultScreen.id }))
       }
     }
   }, [screens, settings.screenId, setSettings])
@@ -152,9 +157,10 @@ export default function MediaConfiguration() {
   useEffect(() => {
     if (audioInputs.length > 0 && !settings.audioInputId) {
       const defaultAudio =
-        audioInputs.find((audio) => audio.deviceId) || audioInputs[0]
+        audioInputs.find((audio: MediaDeviceInfo) => audio.deviceId) ||
+        audioInputs[0]
       if (defaultAudio) {
-        setSettings((prev) => ({
+        setSettings((prev: any) => ({
           ...prev,
           audioInputId: defaultAudio.deviceId,
         }))
@@ -167,8 +173,9 @@ export default function MediaConfiguration() {
     if (resolutions.length > 0 && !settings.resolution) {
       // Default to 720p for better performance
       const defaultResolution =
-        resolutions.find((r) => r.includes("720p")) || resolutions[0]
-      setSettings((prev) => ({ ...prev, resolution: defaultResolution }))
+        resolutions.find((r: ResolutionOption) => r.includes("720p")) ||
+        resolutions[0]
+      setSettings((prev: any) => ({ ...prev, resolution: defaultResolution }))
     }
   }, [resolutions, settings.resolution, setSettings])
 
@@ -176,7 +183,7 @@ export default function MediaConfiguration() {
   useEffect(() => {
     if (!settings.fps) {
       // Default to 60 FPS for smoother video
-      setSettings((prev) => ({ ...prev, fps: 60 }))
+      setSettings((prev: any) => ({ ...prev, fps: 60 }))
     }
   }, [settings.fps, setSettings])
 
@@ -184,10 +191,10 @@ export default function MediaConfiguration() {
    * Validation logic to check if currently selected devices are still present in lists
    */
   const isScreenValid = screens.some(
-    (screen) => screen.id === settings.screenId
+    (screen: Electron.DesktopCapturerSource) => screen.id === settings.screenId
   )
   const isAudioValid = audioInputs.some(
-    (audio) => audio.deviceId === settings.audioInputId
+    (audio: MediaDeviceInfo) => audio.deviceId === settings.audioInputId
   )
   const isResolutionValid = resolutions.includes(
     settings.resolution as ResolutionOption
@@ -268,7 +275,7 @@ export default function MediaConfiguration() {
             <Select
               value={settings.screenId || ""}
               onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, screenId: value }))
+                setSettings((prev: any) => ({ ...prev, screenId: value }))
               }
               disabled={isScreensLoading}
             >
@@ -287,7 +294,7 @@ export default function MediaConfiguration() {
                     No screens available
                   </SelectItem>
                 )}
-                {screens.map((screen) => (
+                {screens.map((screen: Electron.DesktopCapturerSource) => (
                   <SelectItem key={screen.id} value={screen.id}>
                     <span>{formatDeviceName(screen.name)}</span>
                   </SelectItem>
@@ -323,7 +330,7 @@ export default function MediaConfiguration() {
             <Select
               value={settings.audioInputId || ""}
               onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, audioInputId: value }))
+                setSettings((prev: any) => ({ ...prev, audioInputId: value }))
               }
               disabled={isAudioInputsLoading}
             >
@@ -342,7 +349,7 @@ export default function MediaConfiguration() {
                     No audio devices available
                   </SelectItem>
                 )}
-                {audioInputs.map((audioInput) => (
+                {audioInputs.map((audioInput: MediaDeviceInfo) => (
                   <SelectItem
                     key={audioInput.deviceId}
                     value={audioInput.deviceId}
@@ -400,7 +407,10 @@ export default function MediaConfiguration() {
                   <Select
                     value={settings.resolution || ""}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({ ...prev, resolution: value }))
+                      setSettings((prev: any) => ({
+                        ...prev,
+                        resolution: value,
+                      }))
                     }
                     disabled={isResolutionsLoading}
                   >
@@ -419,7 +429,7 @@ export default function MediaConfiguration() {
                           No resolutions available
                         </SelectItem>
                       )}
-                      {resolutions.map((resolution) => (
+                      {resolutions.map((resolution: string) => (
                         <SelectItem key={resolution} value={resolution}>
                           <span className="text-xs">{resolution}</span>
                         </SelectItem>
@@ -442,7 +452,7 @@ export default function MediaConfiguration() {
                   <Select
                     value={settings.fps?.toString() || ""}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setSettings((prev: any) => ({
                         ...prev,
                         fps: parseInt(value, 10),
                       }))
@@ -475,7 +485,7 @@ export default function MediaConfiguration() {
                       id="cloud-upload-switch"
                       checked={settings.isCloudUploadEnabled}
                       onCheckedChange={(checked) =>
-                        setSettings((prev) => ({
+                        setSettings((prev: any) => ({
                           ...prev,
                           isCloudUploadEnabled: checked,
                         }))
@@ -496,7 +506,7 @@ export default function MediaConfiguration() {
                     <Switch
                       checked={settings.isStreamingEnabled}
                       onCheckedChange={(checked) =>
-                        setSettings((prev) => ({
+                        setSettings((prev: any) => ({
                           ...prev,
                           isStreamingEnabled: checked,
                         }))
@@ -513,7 +523,7 @@ export default function MediaConfiguration() {
                         placeholder="rtmp://a.rtmp.youtube.com/live2"
                         value={settings.rtmpUrl}
                         onChange={(e) =>
-                          setSettings((prev) => ({
+                          setSettings((prev: any) => ({
                             ...prev,
                             rtmpUrl: e.target.value,
                           }))
@@ -530,7 +540,7 @@ export default function MediaConfiguration() {
                         placeholder="Enter your stream key"
                         value={settings.streamKey}
                         onChange={(e) =>
-                          setSettings((prev) => ({
+                          setSettings((prev: any) => ({
                             ...prev,
                             streamKey: e.target.value,
                           }))

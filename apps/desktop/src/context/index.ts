@@ -103,7 +103,7 @@ type RecorderState = {
  * useRecorderContext Store
  * Implemention of the global state store using Zustand.
  */
-export const useRecorderContext = create<RecorderState>()((set) => ({
+export const useRecorderContext = create<RecorderState>()((set: any) => ({
   user: null,
   setUser: (user: User) => set({ user }),
   token: null,
@@ -276,7 +276,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
           isCloudUploadEnabled: boolean
         })
   ) =>
-    set((state) => ({
+    set((state: RecorderState) => ({
       settings:
         typeof settings === "function" ? settings(state.settings) : settings,
     })),

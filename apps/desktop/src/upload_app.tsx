@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios, { AxiosProgressEvent } from "axios"
 import { Minimize2, X } from "lucide-react"
 import React, { useCallback, useRef, useState } from "react"
 import { Button } from "@workspace/ui/components/button"
@@ -100,7 +100,7 @@ export default function UploadApp() {
           headers: {
             "Content-Type": videoBlob.type || "video/webm",
           },
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
             if (progressEvent.total) {
               const progress = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total

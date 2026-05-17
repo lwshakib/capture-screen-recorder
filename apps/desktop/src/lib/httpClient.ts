@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
 import { env } from "./env"
 import { logger } from "./logger"
 
@@ -12,7 +12,7 @@ export const httpClient = axios.create({
 })
 
 // Auth Interceptor: Automatically inject the Bearer token from the local file system
-httpClient.interceptors.request.use(async (config) => {
+httpClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
     const token = await window.ipcRenderer.invoke("get-token")
     if (token && typeof token === "string") {
@@ -28,14 +28,14 @@ httpClient.interceptors.request.use(async (config) => {
 
 // Request Interceptor: Logs every outgoing HTTP request for debugging
 httpClient.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     logger.debug("HTTP Request", {
       method: config.method,
       url: config.url,
     })
     return config
   },
-  (error) => {
+  (error: AxiosError) => {
     // Log failures that happen before the request is even sent
     logger.error("HTTP Request Error", error)
     return Promise.reject(error)
@@ -44,11 +44,11 @@ httpClient.interceptors.request.use(
 
 // Response Interceptor: centralized error logging for all incoming responses
 httpClient.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse) => {
     // Success - pass the response through
     return response
   },
-  (error) => {
+  (error: AxiosError) => {
     // Log different types of failures (Network vs Server Error)
     if (error.response) {
       // The server responded with a status code outside the 2xx range
