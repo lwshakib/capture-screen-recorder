@@ -1,6 +1,6 @@
 import { useRecorderContext } from "@/context/index";
 import { logger } from "@/lib/logger";
-import { AlertCircle, CheckCircle, Monitor, RefreshCw, Video } from "lucide-react";
+import { AlertCircle, CheckCircle, Monitor, RefreshCw, Video, Cloud } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Header from "./Header";
 import PreviewScreen from "./PreviewScreen";
@@ -16,6 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@workspace/ui/components/accordion";
 
 type ResolutionOption = string;
 
@@ -176,10 +182,12 @@ export default function MediaConfiguration() {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* App Header section */}
       <Header />
-      <div className="flex-1 px-4 py-2">
+      
+      {/* Scrollable content area with hidden scrollbar */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-4 py-2 non-draggable">
         {/* Error Alerts Display */}
         {errors.general && (
           <Alert variant="destructive" className="mb-4">
@@ -194,7 +202,7 @@ export default function MediaConfiguration() {
             <span className="text-sm font-medium">Media Sources</span>
             {lastRefreshTime && (
               <span className="text-xs text-muted-foreground">
-                Last updated: {lastRefreshTime.toLocaleTimeString()}
+                {lastRefreshTime.toLocaleTimeString()}
               </span>
             )}
           </div>
@@ -331,132 +339,165 @@ export default function MediaConfiguration() {
             </Select>
           </div>
 
-          {/* Section 3: Output Resolution Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Resolution</label>
-              {settings.resolution && (
-                <div className="flex items-center gap-2">
-                  {isResolutionValid ? (
-                    <CheckCircle className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-3 w-3 text-red-500" />
+          {/* Visual Preview Section (Thumbnail of selected screen) */}
+          <div className="pt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Monitor className="size-4 opacity-70" />
+              <span className="text-xs">Preview</span>
+            </div>
+            <PreviewScreen selectedDisplayId={settings.screenId || ""} />
+          </div>
+
+          {/* Advanced Accordion Section */}
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="advanced" className="border-none">
+              <AccordionTrigger className="hover:no-underline py-2">
+                <span className="text-sm font-semibold">Advanced Settings</span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                {/* Section 3: Output Resolution Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium">Resolution</label>
+                    {settings.resolution && (
+                      <div className="flex items-center gap-2">
+                        {isResolutionValid ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {isResolutionsLoading && (
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span>Loading...</span>
+                    </div>
+                  )}
+
+                  <Select
+                    value={settings.resolution || ""}
+                    onValueChange={(value) =>
+                      setSettings((prev) => ({ ...prev, resolution: value }))
+                    }
+                    disabled={isResolutionsLoading}
+                  >
+                    <SelectTrigger className="w-full h-8 text-xs">
+                      <SelectValue
+                        placeholder={
+                          isResolutionsLoading
+                            ? "Loading..."
+                            : "Select a resolution"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {resolutions.length === 0 && !isResolutionsLoading && (
+                        <SelectItem value="" disabled>
+                          No resolutions available
+                        </SelectItem>
+                      )}
+                      {resolutions.map((resolution) => (
+                        <SelectItem key={resolution} value={resolution}>
+                          <span className="text-xs">{resolution}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Section 4: Frame Rate (FPS) Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium">Frame Rate (FPS)</label>
+                    {settings.fps && (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    )}
+                  </div>
+
+                  <Select
+                    value={settings.fps?.toString() || ""}
+                    onValueChange={(value) =>
+                      setSettings((prev) => ({ ...prev, fps: parseInt(value, 10) }))
+                    }
+                  >
+                    <SelectTrigger className="w-full h-8 text-xs">
+                      <SelectValue placeholder="Select FPS" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="24">24 FPS (Cinematic)</SelectItem>
+                      <SelectItem value="30">30 FPS (Standard)</SelectItem>
+                      <SelectItem value="60">60 FPS (Smooth)</SelectItem>
+                      <SelectItem value="120">120 FPS (Ultra Smooth)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Section: Upload to Cloud Toggle */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Cloud className="h-4 w-4 text-primary" />
+                      <label className="text-xs font-medium">Upload to Cloud</label>
+                    </div>
+                    <Switch
+                      id="cloud-upload-switch"
+                      checked={settings.isCloudUploadEnabled}
+                      onCheckedChange={(checked) =>
+                        setSettings((prev) => ({ ...prev, isCloudUploadEnabled: checked }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Section 5: Live Streaming Configuration (YouTube RTMP) */}
+                <div className="space-y-4 pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-red-600" />
+                      <label className="text-xs font-medium">Live Stream (YouTube)</label>
+                    </div>
+                    <Switch
+                      checked={settings.isStreamingEnabled}
+                      onCheckedChange={(checked) =>
+                        setSettings((prev) => ({ ...prev, isStreamingEnabled: checked }))
+                      }
+                    />
+                  </div>
+
+                  {/* Render streaming inputs only if toggle is ON */}
+                  {settings.isStreamingEnabled && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
+                        <Input
+                          placeholder="rtmp://a.rtmp.youtube.com/live2"
+                          value={settings.rtmpUrl}
+                          onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
+                        <Input
+                          type="password"
+                          placeholder="Enter your stream key"
+                          value={settings.streamKey}
+                          onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            {isResolutionsLoading && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <RefreshCw className="h-3 w-3 animate-spin" />
-                <span>Loading device-supported resolutions...</span>
-              </div>
-            )}
-
-            <Select
-              value={settings.resolution || ""}
-              onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, resolution: value }))
-              }
-              disabled={isResolutionsLoading}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    isResolutionsLoading
-                      ? "Loading resolutions..."
-                      : "Select a resolution"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {resolutions.length === 0 && !isResolutionsLoading && (
-                  <SelectItem value="" disabled>
-                    No resolutions available
-                  </SelectItem>
-                )}
-                {resolutions.map((resolution) => (
-                  <SelectItem key={resolution} value={resolution}>
-                    <span>{resolution}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Section 4: Frame Rate (FPS) Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Frame Rate (FPS)</label>
-              {settings.fps && (
-                <CheckCircle className="h-3 w-3 text-green-500" />
-              )}
-            </div>
-
-            <Select
-              value={settings.fps?.toString() || ""}
-              onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, fps: parseInt(value, 10) }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select FPS" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="24">24 FPS (Cinematic)</SelectItem>
-                <SelectItem value="30">30 FPS (Standard)</SelectItem>
-                <SelectItem value="60">60 FPS (Smooth)</SelectItem>
-                <SelectItem value="120">120 FPS (Ultra Smooth)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Section 5: Live Streaming Configuration (YouTube RTMP) */}
-          <div className="space-y-4 pt-2 border-t border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Video className="h-4 w-4 text-red-600" />
-                <label className="text-sm font-medium">Live Stream (YouTube)</label>
-              </div>
-              <Switch
-                checked={settings.isStreamingEnabled}
-                onCheckedChange={(checked) =>
-                  setSettings((prev) => ({ ...prev, isStreamingEnabled: checked }))
-                }
-              />
-            </div>
-
-            {/* Render streaming inputs only if toggle is ON */}
-            {settings.isStreamingEnabled && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
-                  <Input
-                    placeholder="rtmp://a.rtmp.youtube.com/live2"
-                    value={settings.rtmpUrl}
-                    onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
-                  <Input
-                    type="password"
-                    placeholder="Enter your stream key"
-                    value={settings.streamKey}
-                    onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
-                    className="h-8 text-xs"
-                  />
-                  <p className="text-[10px] text-muted-foreground ml-1">
-                    Your stream key is required to go live.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Footer Status Indicators */}
-          <div className="pt-2">
+          <div className="pt-2 pb-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div
                 className={`w-2 h-2 rounded-full ${
@@ -473,15 +514,6 @@ export default function MediaConfiguration() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Visual Preview Section (Thumbnail of selected screen) */}
-      <div className="pt-2 px-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Monitor className="size-4 opacity-70" />
-          <span className="text-xs">Preview</span>
-        </div>
-        <PreviewScreen selectedDisplayId={settings.screenId || ""} />
       </div>
     </div>
   );
