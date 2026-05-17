@@ -18,6 +18,21 @@ type User = {
 type ResolutionOption = string
 
 /**
+ * Settings Type definition
+ * Shared configuration for recording and streaming.
+ */
+export type Settings = {
+  screenId: string | null
+  audioInputId: string | null
+  resolution: string | null
+  fps: number | null
+  isStreamingEnabled: boolean
+  rtmpUrl: string
+  streamKey: string
+  isCloudUploadEnabled: boolean
+}
+
+/**
  * RecorderState Type definition
  * Global state for the entire recording application using Zustand.
  */
@@ -54,48 +69,10 @@ type RecorderState = {
   setIsResolutionsLoading: (isResolutionsLoading: boolean) => void
 
   // Active Settings (Shared across windows)
-  settings: {
-    screenId: string | null
-    audioInputId: string | null
-    resolution: string | null
-    fps: number | null
-    isStreamingEnabled: boolean
-    rtmpUrl: string
-    streamKey: string
-    isCloudUploadEnabled: boolean
-  }
+  settings: Settings
   // Updater for settings with support for functional updates
   setSettings: (
-    settings:
-      | {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        }
-      | ((prev: {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        }) => {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        })
+    settings: Settings | ((prev: Settings) => Settings)
   ) => void
 }
 
@@ -103,7 +80,7 @@ type RecorderState = {
  * useRecorderContext Store
  * Implemention of the global state store using Zustand.
  */
-export const useRecorderContext = create<RecorderState>()((set: any) => ({
+export const useRecorderContext = create<RecorderState>()((set) => ({
   user: null,
   setUser: (user: User) => set({ user }),
   token: null,
@@ -245,36 +222,7 @@ export const useRecorderContext = create<RecorderState>()((set: any) => ({
 
   // Updates settings, supporting both direct objects and functional updates
   setSettings: (
-    settings:
-      | {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        }
-      | ((prev: {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        }) => {
-          screenId: string | null
-          audioInputId: string | null
-          resolution: string | null
-          fps: number | null
-          isStreamingEnabled: boolean
-          rtmpUrl: string
-          streamKey: string
-          isCloudUploadEnabled: boolean
-        })
+    settings: Settings | ((prev: Settings) => Settings)
   ) =>
     set((state: RecorderState) => ({
       settings:
