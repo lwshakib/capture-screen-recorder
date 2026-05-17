@@ -1,61 +1,36 @@
-import { LogOut, Moon, Sun } from "lucide-react";
+import { 
+  LogOut, 
+  Moon, 
+  Sun, 
+  Monitor, 
+  Mic, 
+  GripHorizontal,
+  Loader2
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { getWebUrlOrNull } from "../../utils/env";
 import { logger } from "../../utils/logger";
+import { useExtensionContext } from "../../context/ExtensionContext";
+import CustomSelect from "./CustomSelect";
 
 /**
  * ResolutionWidget Component
  * Logic for pre-recording setup, including camera/mic selection,
- * hardware capability probing, and user authentication management.
+ * hardware capability probing, and user setup.
  */
 
 type Resolution = { label: string; width: number; height: number };
 
-// Pre-defined resolutions to test against hardware capabilities
 const CANDIDATE_RESOLUTIONS: Resolution[] = [
-  { label: "144p (256×144)", width: 256, height: 144 },
-  { label: "240p (426×240)", width: 426, height: 240 },
-  { label: "360p (640×360)", width: 640, height: 360 },
-  { label: "480p (640×480)", width: 640, height: 480 },
-  { label: "720p (1280×720)", width: 1280, height: 720 },
-  { label: "1080p (1920×1080)", width: 1920, height: 1080 },
-  { label: "1440p (2560×1440)", width: 2560, height: 1440 },
-  { label: "2160p (3840×2160)", width: 3840, height: 2160 },
+  { label: "360p", width: 640, height: 360 },
+  { label: "480p", width: 640, height: 480 },
+  { label: "720p", width: 1280, height: 720 },
+  { label: "1080p", width: 1920, height: 1080 },
+  { label: "1440p", width: 2560, height: 1440 },
+  { label: "4K", width: 3840, height: 2160 },
 ];
 
-type ThemeMode = "dark" | "light";
-
-/**
- * Skeleton UI displayed during hardware probing or user data fetching
- */
-const WidgetSkeleton = ({ theme: _theme }: { theme: ThemeMode }) => (
-  <div className="resolution-widget__body">
-    <div className="resolution-widget__auth-buttons">
-      <div className="skeleton-button skeleton-button--primary"></div>
-    </div>
-    <div className="skeleton-section">
-      <div className="skeleton-label"></div>
-      <div className="skeleton-radios">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="skeleton-radio">
-            <div className="skeleton-radio-dot"></div>
-            <div className="skeleton-radio-text"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-    <div className="resolution-widget__user-profile">
-      <div className="resolution-widget__user-info">
-        <div className="skeleton-avatar"></div>
-        <div className="skeleton-username"></div>
-      </div>
-      <div className="skeleton-logout-btn"></div>
-    </div>
-  </div>
-);
-
 function ResolutionWidget() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { user, status, login, logout, checkAuth } = useExtensionContext();
   
   // State for hardware/software settings
   const [supported, setSupported] = useState<Resolution[]>([]);
@@ -64,7 +39,7 @@ function ResolutionWidget() {
   const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null);
   
   // Appearance
-  const [theme, setTheme] = useState<ThemeMode>(() => {
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
     try {
       const raw = localStorage.getItem("capture_widget_theme");
       return raw === "light" ? "light" : "dark";
@@ -73,45 +48,31 @@ function ResolutionWidget() {
     }
   });
 
-  // Drag-and-drop mechanics for position persistence
-  const [position, setPosition] = useState<{ x: number; y: number }>(() => ({
-    x: 0,
-    y: 0,
-  }));
+  // Drag-and-drop mechanics
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 20, y: 20 });
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
-  /**
-   * Hardware Probing:
-   * 1. Temporarily opens the camera to query max supported resolution.
-   * 2. Enumerates microphones.
-   * 3. Loads last used position from localStorage.
-   */
   useEffect(() => {
+    checkAuth();
+    
+    // Probe hardware
     const probe = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         const track = stream.getVideoTracks()[0];
         const caps = typeof track.getCapabilities === "function" ? (track.getCapabilities() as any) : {};
-        
-        // Clean up immediately after reading capabilities
         stream.getTracks().forEach((t) => t.stop());
 
         if (caps.width && caps.height) {
           const filtered = CANDIDATE_RESOLUTIONS.filter(
-            (r) => r.width <= (caps.width.max || 0) && r.height <= (caps.height.max || 0)
-          ).sort((a, b) => a.width - b.width);
+            (r) => r.width <= (caps.width.max || 1920) && r.height <= (caps.height.max || 1080)
+          );
           setSupported(filtered);
-          
-          // Restore user's previous selection if valid for current hardware
           const savedSel = localStorage.getItem("capture_resolution_selected");
           if (savedSel) {
-            const parsed = JSON.parse(savedSel) as Resolution;
-            const found = filtered.find(r => r.width === parsed.width);
-            setSelected(found || filtered[filtered.length - 1]);
+            const parsed = JSON.parse(savedSel);
+            setSelected(filtered.find(r => r.width === parsed.width) || filtered[filtered.length - 1]);
           } else {
             setSelected(filtered[filtered.length - 1]);
           }
@@ -120,10 +81,9 @@ function ResolutionWidget() {
         logger.error("Hardware probing failed", err);
       }
     };
-
     probe();
 
-    // Fetch available audio input devices
+    // Enumerate audio
     const enumerate = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -137,126 +97,142 @@ function ResolutionWidget() {
     };
     enumerate();
 
-    // Restore widget coordinates
-    try {
-      const savedPos = localStorage.getItem("capture_resolution_widget_position");
-      if (savedPos) setPosition(JSON.parse(savedPos));
-      else {
-        // Default: Top right margin
-        setPosition({ x: window.innerWidth - 280, y: 20 });
-      }
-    } catch {}
+    // Restore position
+    const savedPos = localStorage.getItem("capture_resolution_widget_position");
+    if (savedPos) setPosition(JSON.parse(savedPos));
   }, []);
 
-  /**
-   * Global mouse/touch listeners for dragging the floating widget.
-   */
   useEffect(() => {
-    const handleMove = (clientX: number, clientY: number) => {
+    if (selected) localStorage.setItem("capture_resolution_selected", JSON.stringify(selected));
+  }, [selected]);
+
+  useEffect(() => {
+    if (selectedAudioId) localStorage.setItem("capture_audioinput_selected", selectedAudioId);
+  }, [selectedAudioId]);
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      const x = Math.min(Math.max(0, clientX - dragOffsetRef.current.dx), window.innerWidth - 260);
-      const y = Math.min(Math.max(0, clientY - dragOffsetRef.current.dy), window.innerHeight - 300);
+      const x = Math.min(Math.max(0, e.clientX - dragOffsetRef.current.dx), window.innerWidth - 260);
+      const y = Math.min(Math.max(0, e.clientY - dragOffsetRef.current.dy), window.innerHeight - 300);
       setPosition({ x, y });
     };
-
-    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const onMouseUp = () => { isDraggingRef.current = false; };
-    
-    window.addEventListener("mousemove", onMouseMove);
+    const onMouseUp = () => { 
+      isDraggingRef.current = false; 
+      localStorage.setItem("capture_resolution_widget_position", JSON.stringify(position));
+    };
+    window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, []);
+  }, [position]);
 
-  const onDragStart = (clientX: number, clientY: number) => {
+  const onDragStart = (e: React.MouseEvent) => {
     isDraggingRef.current = true;
-    dragOffsetRef.current = { dx: clientX - position.x, dy: clientY - position.y };
+    dragOffsetRef.current = { dx: e.clientX - position.x, dy: e.clientY - position.y };
   };
 
-  /**
-   * Triggers the auth flow in the background script.
-   */
-  const startAuth = () => {
-    const webUrl = getWebUrlOrNull();
-    if (!webUrl) { logger.warn("VITE_WEB_URL missing"); return; }
-    chrome.runtime.sendMessage({ action: "AUTH_START", webUrl });
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    window.dispatchEvent(new CustomEvent("capture:theme-change", { detail: { theme: next } }));
   };
-
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  /**
-   * Syncs user profile data from the web app using the stored Bearer token.
-   */
-  const fetchUser = async () => {
-    try {
-      setIsLoading(true);
-      const { authToken } = await chrome.storage.local.get("authToken");
-      if (!authToken) { setUser(null); return; }
-
-      const webUrl = getWebUrlOrNull();
-      const response = await fetch(`${webUrl}/api/token/users`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      }
-    } catch (e) {
-      logger.error("User sync failed", e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchUser(); }, []);
 
   return (
     <div
-      className={`resolution-widget resolution-widget--${theme}`}
-      ref={containerRef}
+      className={`pointer-events-auto fixed flex flex-col w-[260px] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden ${theme === 'dark' ? 'theme-dark' : ''}`}
       style={{ left: position.x, top: position.y }}
     >
-      {/* Header bar handles dragging and theme toggle */}
-      <div className="resolution-widget__header" onMouseDown={(e) => onDragStart(e.clientX, e.clientY)}>
-        <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-          <span>Setup</span>
-          <button className="theme-toggle" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
+      {/* Header bar handles dragging */}
+      <div 
+        className="flex items-center justify-between px-3 py-2 bg-accent/10 border-b border-border cursor-grab active:cursor-grabbing group"
+        onMouseDown={onDragStart}
+      >
+        <div className="flex items-center gap-2">
+          <GripHorizontal className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recorder Setup</span>
         </div>
+        <button 
+          onClick={toggleTheme}
+          className="h-6 w-6 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+        >
+          {theme === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+        </button>
       </div>
 
-      <div className="resolution-widget__body">
-        {isLoading ? <WidgetSkeleton theme={theme} /> : !user ? (
-          <button className="primary-btn" onClick={startAuth}>Sign in to Record</button>
+      <div className="p-4 flex flex-col gap-5">
+        {status === "loading" ? (
+          <div className="flex flex-col items-center justify-center py-6 gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Loading Hardware</span>
+          </div>
+        ) : !user ? (
+          <div className="flex flex-col gap-3">
+            <div className="text-center space-y-1 mb-2">
+              <h4 className="text-xs font-bold uppercase tracking-tight">Authentication Required</h4>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">Sign in to enable recording and cloud uploads.</p>
+            </div>
+            <button 
+              onClick={login}
+              className="w-full h-9 bg-primary text-primary-foreground rounded-xl font-bold text-xs shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              Sign in to Capture
+            </button>
+          </div>
         ) : (
           <>
-            <div className="label">Resolution</div>
-            <div className="radio-group">
-               {supported.map(r => (
-                 <label key={r.label} className={selected?.width === r.width ? 'active' : ''}>
-                   <input type="radio" checked={selected?.width === r.width} onChange={() => setSelected(r)} />
-                   {r.label}
-                 </label>
-               ))}
+            {/* Resolution Selector */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <Monitor className="h-3 w-3" />
+                <span>Resolution</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {supported.map(r => (
+                  <button 
+                    key={r.label} 
+                    onClick={() => setSelected(r)}
+                    className={`h-8 px-2 rounded-lg text-[10px] font-bold transition-all border ${
+                      selected?.width === r.width 
+                        ? 'bg-primary/10 border-primary text-primary' 
+                        : 'bg-accent/30 border-transparent text-muted-foreground hover:bg-accent/50'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <div className="label">Microphone</div>
-            <select value={selectedAudioId || ''} onChange={(e) => setSelectedAudioId(e.target.value)}>
-              {audioInputs.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Default'}</option>)}
-            </select>
 
-            {/* Account Management */}
-            <div className="user-footer">
-               <img src={user.image} className="avatar" />
-               <span className="name">{user.name}</span>
-               <button onClick={() => { chrome.storage.local.remove("authToken"); setUser(null); }}>
-                 <LogOut size={14} />
-               </button>
+            {/* Microphone Selector */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <Mic className="h-3 w-3" />
+                <span>Audio Input</span>
+              </div>
+              <CustomSelect 
+                options={audioInputs.map(d => ({ label: d.label || 'Default Microphone', value: d.deviceId }))}
+                value={selectedAudioId}
+                onChange={setSelectedAudioId}
+              />
+            </div>
+
+            {/* Account Management Footer */}
+            <div className="mt-2 flex items-center justify-between p-2 rounded-xl bg-accent/10 border border-border/10">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full overflow-hidden border border-primary/20">
+                  <img src={user.image} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-[10px] font-bold truncate max-w-[100px]">{user.name}</span>
+              </div>
+              <button 
+                onClick={logout}
+                className="h-6 w-6 flex items-center justify-center rounded-lg hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+              >
+                <LogOut className="h-3 w-3" />
+              </button>
             </div>
           </>
         )}

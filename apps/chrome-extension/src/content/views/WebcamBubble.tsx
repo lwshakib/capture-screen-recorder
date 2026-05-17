@@ -1,34 +1,29 @@
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { logger } from "../../utils/logger";
+import { Loader2, CameraOff, GripVertical } from "lucide-react";
 
-/**
- * WebcamBubble Component
- * Creates a floating, draggable circular overlay displaying a live camera feed.
- * This stream is independent of the screen recording stream and is intended as a visual aid.
- */
-function WebcamBubble() {
+export default function WebcamBubble() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  // Floating position state
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 20, y: 20 });
-  const isDraggingRef = useRef(false);
-  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Media Lifecycle:
-   * Initializes the user's default camera and attaches it to a video element.
-   * Auto-stops when the component is unmounted or the widget is toggled off.
-   */
   useEffect(() => {
     const start = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 300, height: 300 }, // Square capture for the bubble
-          audio: false, // Don't capture audio in the bubble to avoid feedback loops
+          video: { 
+            width: { ideal: 640 }, 
+            height: { ideal: 640 },
+            facingMode: "user"
+          },
+          audio: false,
         });
+        
         streamRef.current = stream;
         
         if (videoRef.current) {
@@ -36,58 +31,70 @@ function WebcamBubble() {
           videoRef.current.onplaying = () => setLoading(false);
           await videoRef.current.play();
         }
-      } catch (err) {
-        logger.error("Webcam access denied", err);
+      } catch (err: any) {
+        logger.error("Webcam access failed", err);
+        setError(err.name === "NotAllowedError" ? "Permission Denied" : "Camera Unavailable");
         setLoading(false);
       }
     };
-
+    
     start();
-
-    // Standard cleanup to release camera hardware
+    
     return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
     };
   }, []);
-
-  /**
-   * Persists the bubble's coordinates so it stays in the same place
-   * between page navigations.
-   */
-  useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      setPosition({
-        x: e.clientX - dragOffsetRef.current.dx,
-        y: e.clientY - dragOffsetRef.current.dy
-      });
-    };
-
-    const handleUp = () => (isDraggingRef.current = false);
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
-    };
-  }, []);
-
-  const onStartDrag = (e: React.MouseEvent) => {
-    isDraggingRef.current = true;
-    dragOffsetRef.current = { dx: e.clientX - position.x, dy: e.clientY - position.y };
-  };
 
   return (
-    <div
-      className="webcam-bubble"
-      onMouseDown={onStartDrag}
-      style={{ left: position.x, top: position.y }}
+    <motion.div
+      drag
+      dragMomentum={false}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="pointer-events-auto fixed z-[10000] w-48 h-48 rounded-full overflow-hidden border-4 border-primary shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-black ring-4 ring-primary/10 group cursor-grab active:cursor-grabbing"
+      style={{ right: "40px", bottom: "40px" }}
     >
-      {loading && <div className="loader">Initializing Camera...</div>}
-      <video ref={videoRef} muted playsInline className="video-feed" />
-    </div>
+      <AnimatePresence>
+        {loading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-md z-10"
+          >
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-[10px] font-bold text-primary mt-2 tracking-widest uppercase">Waking Camera</span>
+          </motion.div>
+        )}
+
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 backdrop-blur-xl z-10 px-4 text-center"
+          >
+            <CameraOff className="h-6 w-6 text-destructive mb-2" />
+            <span className="text-[10px] font-bold text-destructive leading-tight">{error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Drag handle hint on hover */}
+      <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
+        <GripVertical className="h-4 w-4 text-white/50" />
+      </div>
+
+      <video 
+        ref={videoRef} 
+        muted 
+        playsInline 
+        className="w-full h-full object-cover scale-x-[-1] rounded-full" 
+      />
+      
+      {/* Glossy overlay effect */}
+      <div className="absolute inset-0 pointer-events-none rounded-full shadow-[inset_0_0_40px_rgba(255,255,255,0.05)] border border-white/10" />
+    </motion.div>
   );
 }
-
-export default WebcamBubble;

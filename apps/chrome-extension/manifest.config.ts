@@ -19,9 +19,13 @@ export default defineManifest({
       "48": "public/icons/icon48.png",
       "128": "public/icons/icon128.png",
     },
+    default_title: "Capture Studio",
   },
-  permissions: ["activeTab", "tabs", "identity", "storage", "scripting"],
+  permissions: ["activeTab", "tabs", "identity", "storage", "scripting", "sidePanel"],
   host_permissions: ["<all_urls>"],
+  side_panel: {
+    default_path: "src/sidepanel/index.html",
+  },
   content_scripts: [
     {
       js: ["src/content/main.tsx"],
