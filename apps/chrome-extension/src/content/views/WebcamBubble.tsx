@@ -53,7 +53,7 @@ export default function WebcamBubble() {
       dragMomentum={false}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="pointer-events-auto fixed z-[10000] w-48 h-48 rounded-full overflow-hidden border-4 border-primary shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-black ring-4 ring-primary/10 group cursor-grab active:cursor-grabbing"
+      className="pointer-events-auto fixed z-[10000] w-48 h-48 rounded-2xl overflow-hidden border-4 border-primary shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-black ring-4 ring-primary/10 group cursor-grab active:cursor-grabbing"
       style={{ right: "40px", bottom: "40px" }}
     >
       <AnimatePresence>
@@ -90,11 +90,11 @@ export default function WebcamBubble() {
         ref={videoRef} 
         muted 
         playsInline 
-        className="w-full h-full object-cover scale-x-[-1] rounded-full" 
+        className="w-full h-full object-contain scale-x-[-1]" 
       />
       
       {/* Glossy overlay effect */}
-      <div className="absolute inset-0 pointer-events-none rounded-full shadow-[inset_0_0_40px_rgba(255,255,255,0.05)] border border-white/10" />
+      <div className="absolute inset-0 pointer-events-none rounded-2xl shadow-[inset_0_0_40px_rgba(255,255,255,0.05)] border border-white/10" />
     </motion.div>
   );
 }

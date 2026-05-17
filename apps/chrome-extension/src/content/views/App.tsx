@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, 
   Square, 
-  Camera, 
+
   Mic, 
   Monitor, 
   GripHorizontal, 
@@ -17,13 +17,6 @@ import {
 import { useExtensionContext } from "../../context/ExtensionContext";
 import { useRecorder } from "../hooks/useRecorder";
 import CustomSelect from "./CustomSelect";
-import WebcamBubble from "./WebcamBubble";
-
-const CANDIDATE_RESOLUTIONS = [
-  { label: "720p (HD)", width: 1280, height: 720 },
-  { label: "1080p (FHD)", width: 1920, height: 1080 },
-  { label: "4K (Ultra)", width: 3840, height: 2160 },
-];
 
 export default function App() {
   const [show, setShow] = useState(false);
@@ -31,11 +24,18 @@ export default function App() {
   const recorder = useRecorder();
 
   // Settings state
-  const [supported] = useState(CANDIDATE_RESOLUTIONS);
-  const [selectedRes, setSelectedRes] = useState(CANDIDATE_RESOLUTIONS[0]);
+  const [supported] = useState(() => {
+    const isAvailable = typeof window !== 'undefined' && window.screen;
+    return [
+      { label: "Native", width: isAvailable ? window.screen.width : 1920, height: isAvailable ? window.screen.height : 1080 },
+      { label: "720p (HD)", width: 1280, height: 720 },
+      { label: "1080p (FHD)", width: 1920, height: 1080 },
+      { label: "4K (Ultra)", width: 3840, height: 2160 },
+    ];
+  });
+  const [selectedRes, setSelectedRes] = useState(supported[0]);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null);
-  const [showWebcam, setShowWebcam] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -52,6 +52,7 @@ export default function App() {
 
     const handleMessage = (msg: any) => {
       if (msg.action === "TOGGLE") setShow(prev => !prev);
+      if (msg.action === "AUTH_SUCCESS") checkAuth();
     };
     chrome.runtime.onMessage.addListener(handleMessage);
     return () => chrome.runtime.onMessage.removeListener(handleMessage);
@@ -164,12 +165,6 @@ export default function App() {
                           <Play className="h-4 w-4 fill-current" />
                           Capture
                         </button>
-                        <button 
-                          onClick={() => setShowWebcam(!showWebcam)}
-                          className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${showWebcam ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-accent/30 border-border/50 text-muted-foreground hover:bg-accent'}`}
-                        >
-                          <Camera className="h-5 w-5" />
-                        </button>
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t border-border/50">
@@ -218,13 +213,7 @@ export default function App() {
                   >
                     <Square className="h-4.5 w-4.5 fill-current" />
                   </button>
-                  <button 
-                    onClick={() => setShowWebcam(!showWebcam)}
-                    className={`h-10 w-10 flex items-center justify-center rounded-xl border transition-all ${showWebcam ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5' : 'bg-accent/30 border-border/50 text-muted-foreground hover:bg-accent'}`}
-                    title="Toggle Camera"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
+
                   <button 
                     className="h-10 w-10 flex items-center justify-center rounded-xl bg-accent/30 border border-border/50 text-muted-foreground hover:bg-accent transition-all"
                     title="Settings"
@@ -242,8 +231,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Persistent Webcam Bubble */}
-      {showWebcam && <WebcamBubble />}
+      {/* Webcam is now rendered in a dedicated popup window managed by background.ts */}
 
       {/* Post-Recording Preview Modal */}
       <AnimatePresence>

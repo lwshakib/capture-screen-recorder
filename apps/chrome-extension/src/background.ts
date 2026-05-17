@@ -21,6 +21,8 @@ let isAuthFlowInProgress = false;
  * Handles inter-script communication (Content Script -> Background Script).
  */
 chrome.runtime.onMessage.addListener(async (message: ExtensionMessage, sender) => {
+
+
   // Handle the start of the OAuth authentication flow
   if (message?.action === "AUTH_START") {
     if (isAuthFlowInProgress) {
@@ -158,3 +160,4 @@ chrome.runtime.onMessage.addListener(async (message: ExtensionMessage, sender) =
     );
   }
 });
+

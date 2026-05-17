@@ -104,6 +104,19 @@ export default function MediaConfiguration() {
     getSupportedResolutions();
   }, [refreshDevices, getSupportedResolutions]);
 
+  // Effect: Load persisted settings from settings.json on mount
+  useEffect(() => {
+    window.ipcRenderer.invoke("get-settings").then((savedSettings) => {
+      if (savedSettings) {
+        setSettings((prev) => ({
+          ...prev,
+          ...savedSettings,
+          isStreamingEnabled: false, // Ensure live stream is always false on startup (per user request)
+        }));
+      }
+    });
+  }, [setSettings]);
+
   // Effect: Set a default Screen Source if none is selected
   useEffect(() => {
     if (screens.length > 0 && !settings.screenId) {
@@ -469,7 +482,7 @@ export default function MediaConfiguration() {
 
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">RTMP URL</label>
+                      <label className="text-[10px] font-bold text-muted-foreground ml-1">RTMP URL</label>
                       <Input
                         placeholder="rtmp://a.rtmp.youtube.com/live2"
                         value={settings.rtmpUrl}
@@ -478,7 +491,7 @@ export default function MediaConfiguration() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Stream Key</label>
+                      <label className="text-[10px] font-bold text-muted-foreground ml-1">Stream Key</label>
                       <Input
                         type="password"
                         placeholder="Enter your stream key"

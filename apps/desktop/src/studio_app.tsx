@@ -514,7 +514,8 @@ export default function StudioApp() {
             fps: settings.fps || RECORDING_CONFIG.DEFAULT_FPS,
             videoBitrate: `${RECORDING_CONFIG.VIDEO_BITRATE / 1000}k`,
             audioBitrate: `${RECORDING_CONFIG.AUDIO_BITRATE / 1000}k`,
-            resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080"
+            resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080",
+            hasAudio: recordingStream.getAudioTracks().length > 0,
           });
         }
       };
@@ -772,7 +773,8 @@ export default function StudioApp() {
                     fps: settings.fps || RECORDING_CONFIG.DEFAULT_FPS,
                     videoBitrate: `${RECORDING_CONFIG.VIDEO_BITRATE / 1000}k`,
                     audioBitrate: `${RECORDING_CONFIG.AUDIO_BITRATE / 1000}k`,
-                    resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080"
+                    resolution: settings.resolution?.split('(')[1]?.split(')')[0] || "1920x1080",
+                    hasAudio: recordingStream.getAudioTracks().length > 0,
                   });
                 }
               };

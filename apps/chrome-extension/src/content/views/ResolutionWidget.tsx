@@ -103,6 +103,14 @@ function ResolutionWidget() {
   }, []);
 
   useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.action === "AUTH_SUCCESS") checkAuth();
+    };
+    chrome.runtime.onMessage.addListener(handleMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleMessage);
+  }, [checkAuth]);
+
+  useEffect(() => {
     if (selected) localStorage.setItem("capture_resolution_selected", JSON.stringify(selected));
   }, [selected]);
 

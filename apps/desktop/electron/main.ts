@@ -81,6 +81,7 @@ interface StreamConfig {
   videoBitrate: string;
   audioBitrate: string;
   resolution: string;
+  hasAudio?: boolean;
 }
 
 let ffmpegCommand: FfmpegCommand | null = null;
@@ -442,8 +443,34 @@ ipcMain.on("theme-changed", (_, theme) => {
   });
 });
 
-// Handle settings synchronization to studio window
+const SETTINGS_FILE = path.join(CAPTURE_DIR, "settings.json");
+
+// IPC Handler: Load persisted settings from settings.json
+ipcMain.handle("get-settings", () => {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, "utf-8");
+      const settings = JSON.parse(data);
+      // Always override isStreamingEnabled to false on startup (per user request)
+      settings.isStreamingEnabled = false;
+      return settings;
+    }
+    return {};
+  } catch (error) {
+    console.error("Failed to read settings:", error);
+    return {};
+  }
+});
+
+// Handle settings synchronization to studio window and save to settings.json
 ipcMain.on("settings-changed", (_, settings) => {
+  try {
+    // Persist settings to settings.json in .capture folder
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  } catch (error) {
+    console.error("Failed to save settings:", error);
+  }
+
   if (studioWindow && !studioWindow.isDestroyed()) {
     studioWindow.webContents.send("settings-updated", settings);
   }
@@ -714,40 +741,72 @@ ipcMain.on("streaming:start", (event, config: StreamConfig) => {
     const [width, height] = config.resolution.split('x').map(num => parseInt(num) || 0);
 
     // Initial FFmpeg command setup
-    ffmpegCommand = ffmpeg(inputStream)
+    let cmd = ffmpeg(inputStream)
       .inputFormat('webm') // Explicitly tell FFmpeg the input is WebM (from MediaRecorder)
       .inputOptions([
         '-analyzeduration 0', // Reduce delay
         '-probesize 32',      // Reduce delay
-        '-fflags +genpts+ignthr', // ignthr helps with erratic timestamps from browser MediaRecorder
+        '-fflags +genpts+igndts', // igndts helps with erratic timestamps from browser MediaRecorder
         '-thread_queue_size 1024' // Increase buffer to avoid "thread_queue_size" warnings
       ])
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .audioBitrate(config.audioBitrate || '128k')
+      .videoCodec('libx264');
+
+    if (config.hasAudio !== false) {
+      cmd = cmd
+        .audioCodec('aac')
+        .audioBitrate(config.audioBitrate || '128k');
+    } else {
+      // Add a virtual silent audio input to satisfy YouTube RTMP ingest requirements for silent streams
+      cmd = cmd
+        .input('anullsrc=channel_layout=stereo:sample_rate=44100')
+        .inputFormat('lavfi')
+        .audioCodec('aac')
+        .audioBitrate(config.audioBitrate || '128k');
+    }
+
+    cmd = cmd
       .videoBitrate(config.videoBitrate || '2500k')
       .fps(config.fps || 30)
-      .size(`${width}x${height}`)
-      .outputOptions([
-        '-preset ultrafast', // Use lowest CPU usage, sacrificing compression efficiency
-        '-tune zerolatency', // Optimize for low latency (essential for live streams)
-        `-g ${config.fps * 2}`, // Keyframe interval (GOP size) - 2 seconds usually recommended for streaming
-        `-keyint_min ${config.fps}`,
-        '-crf 23', // Constant Rate Factor (Quality) - Lower is better. 23 is default for x264.
-        '-pix_fmt yuv420p', // Ensure compatibility with most players
-        '-sc_threshold 0', // Disable scene change detection
-        '-profile:v main', // Main profile is widely supported
-        '-level 3.1',
+      .size(`${width}x${height}`);
+
+    const outputOptionsList = [
+      '-preset ultrafast', // Use lowest CPU usage, sacrificing compression efficiency
+      '-tune zerolatency', // Optimize for low latency (essential for live streams)
+      `-g ${config.fps * 2}`, // Keyframe interval (GOP size) - 2 seconds usually recommended for streaming
+      `-keyint_min ${config.fps}`,
+      '-crf 23', // Constant Rate Factor (Quality) - Lower is better. 23 is default for x264.
+      '-pix_fmt yuv420p', // Ensure compatibility with most players
+      '-sc_threshold 0', // Disable scene change detection
+      '-profile:v main', // Main profile is widely supported
+      '-level 3.1',
+      '-maxrate 4000k', // Max bitrate burst
+      '-bufsize 8000k', // Buffer size for bitrate control
+      '-f flv', // FLV container required for RTMP
+      '-flvflags no_duration_filesize' // Optimization for streaming
+    ];
+
+    if (config.hasAudio !== false) {
+      outputOptionsList.push(
+        '-map 0:v',
+        '-map 0:a?', // Optional mapping: if audio track is missing or delayed, do not fail
         '-ar 44100', // Audio sample rate
-        '-b:a 128k', // Audio bitrate
-        '-maxrate 4000k', // Max bitrate burst
-        '-bufsize 8000k', // Buffer size for bitrate control
-        '-f flv', // FLV container required for RTMP
-        '-flvflags no_duration_filesize' // Optimization for streaming
-      ])
+        '-b:a 128k'  // Audio bitrate
+      );
+    } else {
+      outputOptionsList.push(
+        '-map 0:v',
+        '-map 1:a',  // Map virtual silent audio track
+        '-ar 44100', // Audio sample rate
+        '-b:a 128k'  // Audio bitrate
+      );
+    }
+
+    ffmpegCommand = cmd
+      .outputOptions(outputOptionsList)
       .output(fullRtmpUrl)
       // Event Handlers
       .on('start', (commandLine: string) => {
+        console.log("YouTube streaming");
         console.log('FFmpeg process started with command:', commandLine);
         event.reply('streaming:started');
       })

@@ -27,13 +27,20 @@ export function AppHeader() {
         <Button 
           variant="outline" 
           size="sm" 
-          className="flex items-center gap-2 h-9 rounded-xl border-accent/20"
+          className="flex items-center gap-2 h-9 w-9 md:w-auto md:px-3 rounded-xl border-accent/20 p-0 md:p-3"
           onClick={() => setIsUploadDialogOpen(true)}
         >
-          <Upload className="h-4 w-4" />Upload Video
+          <Upload className="h-4 w-4 shrink-0" />
+          <span className="hidden md:inline">Upload Video</span>
         </Button>
-        <Button variant="outline" size="sm" className="flex items-center gap-2 h-9 rounded-xl border-accent/20" onClick={() => setIsRecordDialogOpen(true)}>
-          <Video className="h-4 w-4" />Record Video
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-2 h-9 w-9 md:w-auto md:px-3 rounded-xl border-accent/20 p-0 md:p-3" 
+          onClick={() => setIsRecordDialogOpen(true)}
+        >
+          <Video className="h-4 w-4 shrink-0" />
+          <span className="hidden md:inline">Record Video</span>
         </Button>
         {session?.user && <UserMenu user={session.user} />}
       </div>

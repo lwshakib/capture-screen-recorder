@@ -36,4 +36,10 @@ export default defineManifest({
     service_worker: "src/background.ts",
     type: "module",
   },
+  web_accessible_resources: [
+    {
+      resources: ["src/webcam/index.html"],
+      matches: ["<all_urls>"],
+    },
+  ],
 });

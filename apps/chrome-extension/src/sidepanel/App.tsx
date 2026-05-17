@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, 
   Square, 
-  Camera, 
+
   Mic, 
   Monitor, 
   LogOut, 
@@ -38,22 +38,23 @@ import {
 import { Switch } from "@workspace/ui/components/switch";
 import { cn } from "@workspace/ui/lib/utils";
 
-const CANDIDATE_RESOLUTIONS = [
-  { label: "720p (HD)", width: 1280, height: 720 },
-  { label: "1080p (FHD)", width: 1920, height: 1080 },
-  { label: "4K (Ultra)", width: 3840, height: 2160 },
-];
-
 export default function App() {
   const { user, status, login, logout, checkAuth } = useExtensionContext();
   const recorder = useRecorder();
 
   // Settings state
-  const [supported] = useState(CANDIDATE_RESOLUTIONS);
-  const [selectedRes, setSelectedRes] = useState(CANDIDATE_RESOLUTIONS[0]);
+  const [supported] = useState(() => {
+    const isAvailable = typeof window !== 'undefined' && window.screen;
+    return [
+      { label: "Native", width: isAvailable ? window.screen.width : 1920, height: isAvailable ? window.screen.height : 1080 },
+      { label: "720p (HD)", width: 1280, height: 720 },
+      { label: "1080p (FHD)", width: 1920, height: 1080 },
+      { label: "4K (Ultra)", width: 3840, height: 2160 },
+    ];
+  });
+  const [selectedRes, setSelectedRes] = useState(supported[0]);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioId, setSelectedAudioId] = useState<string | null>(null);
-  const [showWebcam, setShowWebcam] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
@@ -76,6 +77,15 @@ export default function App() {
     }
   }, [checkAuth]);
 
+  // Listen for auth success from background to update authentication status in real-time
+  useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.action === "AUTH_SUCCESS") checkAuth();
+    };
+    chrome.runtime.onMessage.addListener(handleMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleMessage);
+  }, [checkAuth]);
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("capture_theme", theme);
@@ -95,7 +105,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Side Panel Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-card/50 backdrop-blur-md border-b border-border sticky top-0 z-50">
         <div className="flex items-center gap-3">
@@ -120,7 +130,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="p-6 space-y-8 max-w-md mx-auto">
+      <main className="flex-1 flex flex-col p-6 max-w-md mx-auto w-full">
         {status === "loading" ? (
           <div className="py-20 flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -154,12 +164,12 @@ export default function App() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-8"
+            className="flex-1 flex flex-col space-y-8"
           >
             {/* Control Center */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Control Center</h2>
+                <h2 className="text-xs font-bold text-muted-foreground tracking-wider">Control Center</h2>
                 {recorder.state === "recording" && (
                   <div className="flex items-center gap-2 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full">
                     <div className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
@@ -230,45 +240,37 @@ export default function App() {
             {/* Recording Actions */}
             <div className="space-y-4">
               {recorder.state === "idle" ? (
-                <Button 
-                  onClick={recorder.startRecording}
-                  size="lg"
-                  className="w-full h-16 rounded-2xl text-base shadow-2xl shadow-primary/20 gap-3"
-                >
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Play className="h-4 w-4 fill-current" />
-                  </div>
-                  Start Capture
-                </Button>
+                <div className="flex items-center justify-center gap-4 py-2">
+                  {/* Start Capture Icon Button */}
+                  <Button 
+                    onClick={recorder.startRecording}
+                    size="icon"
+                    className="h-16 w-16 rounded-full shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-primary text-primary-foreground"
+                    title="Start Capture"
+                  >
+                    <Play className="h-6 w-6 fill-current ml-1" />
+                  </Button>
+                </div>
               ) : (
-                <Card className="border-primary/20 bg-primary/5 shadow-inner rounded-2xl p-5 flex items-center justify-between">
-                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Duration</span>
+                <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-muted-foreground tracking-wider">Duration</span>
                     <span className="text-2xl font-black tabular-nums text-primary mt-1">{formatTime(recorder.elapsedMs)}</span>
                   </div>
-                  <Button 
-                    variant="destructive"
-                    size="icon"
-                    onClick={recorder.stopRecording}
-                    className="h-14 w-14 rounded-2xl shadow-xl shadow-destructive/20"
-                  >
-                    <Square className="h-6 w-6 fill-current" />
-                  </Button>
-                </Card>
+                  <div className="flex items-center gap-3">
+                    {/* Stop Capture Icon Button */}
+                    <Button 
+                      variant="destructive"
+                      size="icon"
+                      onClick={recorder.stopRecording}
+                      className="h-12 w-12 rounded-xl shadow-lg shadow-destructive/20 active:scale-95 transition-all bg-destructive text-destructive-foreground"
+                      title="Stop Capture"
+                    >
+                      <Square className="h-5 w-5 fill-current" />
+                    </Button>
+                  </div>
+                </div>
               )}
-
-              <Button 
-                variant="outline"
-                size="lg"
-                onClick={() => setShowWebcam(!showWebcam)}
-                className={cn(
-                  "w-full h-14 rounded-2xl border-border/50 gap-3",
-                  showWebcam && "bg-primary/10 border-primary text-primary"
-                )}
-              >
-                <Camera className="h-5 w-5" />
-                {showWebcam ? 'Hide' : 'Show'} Camera Preview
-              </Button>
             </div>
 
             {/* Post-Recording Options */}
@@ -298,7 +300,7 @@ export default function App() {
                     </div>
                   ) : recorder.isUploading ? (
                     <div className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                      <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
                         <span>Uploading...</span>
                         <span>{recorder.uploadProgress}%</span>
                       </div>
@@ -339,12 +341,11 @@ export default function App() {
             </AnimatePresence>
 
             {/* User Footer */}
-            <footer className="pt-6 border-t border-border flex items-center justify-between">
+            <footer className="mt-auto pt-6 border-t border-border flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src={user.image} className="w-10 h-10 rounded-full border-2 border-primary/20 shadow-sm" />
                 <div className="flex flex-col">
                   <span className="text-xs font-bold leading-none">{user.name}</span>
-                  <span className="text-[10px] text-muted-foreground mt-1.5">Pro Member</span>
                 </div>
               </div>
               <Button 

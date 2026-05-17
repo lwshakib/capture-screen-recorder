@@ -5,6 +5,8 @@
 export type MessageAction =
   | "TOGGLE"
   | "TOGGLE_WEBCAM"
+  | "GET_WEBCAM_STATE"
+  | "WEBCAM_STATE"
   | "AUTH_START"
   | "AUTH_SUCCESS"
   | "AUTH_ERROR"
@@ -20,6 +22,17 @@ export interface ToggleMessage extends BaseMessage {
 
 export interface ToggleWebcamMessage extends BaseMessage {
   action: "TOGGLE_WEBCAM";
+}
+
+export interface GetWebcamStateMessage extends BaseMessage {
+  action: "GET_WEBCAM_STATE";
+}
+
+export interface WebcamStateMessage extends BaseMessage {
+  action: "WEBCAM_STATE";
+  payload: {
+    enabled: boolean;
+  };
 }
 
 export interface AuthStartMessage extends BaseMessage {
@@ -52,6 +65,8 @@ export interface AuthStateMessage extends BaseMessage {
 export type ExtensionMessage =
   | ToggleMessage
   | ToggleWebcamMessage
+  | GetWebcamStateMessage
+  | WebcamStateMessage
   | AuthStartMessage
   | AuthSuccessMessage
   | AuthErrorMessage

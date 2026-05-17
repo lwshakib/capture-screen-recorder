@@ -35,15 +35,15 @@ export default function WebcamApp() {
     // Main container - Transparent background
     <div className="w-screen h-screen relative bg-transparent">
       {/* 
-        Circular Container (Overlay)
+        Widescreen Container (Overlay)
         - 'draggable' allows the user to move this window via Electron's drag behavior
-        - 'rounded-full' makes it a perfect circle (assuming square window size)
-        - 'overflow-hidden' clips the video to the circle
+        - 'rounded-2xl' makes it a beautiful widescreen block
+        - 'overflow-hidden' clips the video to the corners
       */}
-      <div className="absolute inset-0 draggable rounded-full overflow-hidden border border-white/10 shadow-xl">
+      <div className="absolute inset-0 draggable rounded-2xl overflow-hidden border border-white/10 shadow-xl">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover" // object-cover ensures video fills the circle without distortion
+          className="w-full h-full object-contain scale-x-[-1]" // object-contain ensures video fits the square exactly without cropping, mirrored for natural feedback
           autoPlay
           playsInline
           muted // Muted locally to prevent feedback loop

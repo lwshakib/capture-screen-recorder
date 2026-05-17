@@ -25,6 +25,7 @@ import {
 } from "@workspace/ui/components/sidebar";
 
 
+import { Icon } from "@iconify/react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { LogoIcon } from "./logo";
@@ -75,17 +76,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Link
-          href={`/`}
-          className="flex items-center gap-3  py-3 cursor-pointer hover:bg-accent/50 rounded-md transition-colors"
-        >
-          <div className="flex items-center gap-2">
-          <LogoIcon className="size-8"/>
-            {state !== "collapsed" && (
-              <span className="text-lg font-bold text-primary">Capture</span>
-            )}
+        <div className="flex items-center justify-between py-3 rounded-md pr-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <LogoIcon className="size-8"/>
+              {state !== "collapsed" && (
+                <span className="text-lg font-bold text-primary">Capture</span>
+              )}
+            </div>
           </div>
-        </Link>
+          {state !== "collapsed" && (
+            <a
+              href="https://github.com/lwshakib/capture-screen-recorder"
+              target="_blank"
+              rel="noreferrer"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="View on GitHub"
+            >
+              <Icon icon="mdi:github" className="size-6" />
+            </a>
+          )}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
