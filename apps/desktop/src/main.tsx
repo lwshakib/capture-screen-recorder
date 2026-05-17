@@ -1,12 +1,12 @@
 // React Application Entry Point for the Main Window (Dashboard)
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App.tsx";
-import "@workspace/ui/globals.css";
-import "./index.css";
-import { ThemeProvider } from "./components/theme-provider.tsx";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { logger } from "./lib/logger";
+import React from "react"
+import ReactDOM from "react-dom/client"
+import App from "./App.tsx"
+import "@workspace/ui/globals.css"
+import "./index.css"
+import { ThemeProvider } from "./components/theme-provider.tsx"
+import { ErrorBoundary } from "./components/ErrorBoundary"
+import { logger } from "./lib/logger"
 
 // Mount the React application to the DOM
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -19,9 +19,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </ThemeProvider>
     </ErrorBoundary>
   </React.StrictMode>
-);
+)
 
 // Listen for test messages from the Electron main process
 window.ipcRenderer.on("main-process-message", (_event, message) => {
-  logger.info("Main process message received", { message });
-});
+  logger.info("Main process message received", { message })
+})

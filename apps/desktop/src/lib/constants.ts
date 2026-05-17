@@ -3,4 +3,4 @@
  * These replace the need for .env files in the desktop environment.
  */
 
-export const WEB_URL = "http://localhost:3000";
+export const WEB_URL = "http://localhost:3000"

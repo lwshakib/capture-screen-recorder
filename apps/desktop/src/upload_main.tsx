@@ -1,10 +1,10 @@
 // Entry point for the "Upload" Window (Progress modal)
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { ThemeProvider } from "./components/theme-provider.tsx";
-import "@workspace/ui/globals.css";
-import "./index.css";
-import UploadApp from "./upload_app";
+import React from "react"
+import ReactDOM from "react-dom/client"
+import { ThemeProvider } from "./components/theme-provider.tsx"
+import "@workspace/ui/globals.css"
+import "./index.css"
+import UploadApp from "./upload_app"
 
 // Initialize the React application for the Upload process
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -14,4 +14,4 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <UploadApp />
     </ThemeProvider>
   </React.StrictMode>
-);
+)

@@ -23,12 +23,12 @@ graph TD
       Desktop["Electron Desktop App"]
       Extension["Chrome Extension"]
     end
-    
+
     subgraph Cloud Backend
       Auth["Better Auth Server"]
       API["Next.js REST API"]
     end
-    
+
     subgraph Storage Layer
       DB[("PostgreSQL (Neon)")]
       Bucket[("Cloudflare R2 (S3)")]
@@ -50,12 +50,12 @@ graph TD
 
 Here is a side-by-side view demonstrating the user interfaces across our dark and light modes:
 
-| Application Target | Dark Mode | Light Mode |
-| :--- | :---: | :---: |
-| **Web Cloud Dashboard** <br> *Manage & stream all your recordings* | <img src="apps/web/public/demos/dark_web_app_recorder.png" width="400" /> | <img src="apps/web/public/demos/light_web_app_recorder.png" width="400" /> |
-| **Desktop Native App** <br> *Local high-performance capture client* | <img src="apps/web/public/demos/dark_desktop_app.png" width="400" /> | <img src="apps/web/public/demos/light_desktop_app.png" width="400" /> |
-| **Desktop Studio Controls** <br> *Sleek floating studio controls overlay* | <img src="apps/web/public/demos/dark_desktop_studio.png" width="400" /> | <img src="apps/web/public/demos/light_desktop_studio.png" width="400" /> |
-| **Chrome Extension Recorder** <br> *Browser tab & window instant capturer* | <img src="apps/web/public/demos/dark_chrome_extension_recorder.png" width="220" /> | <img src="apps/web/public/demos/light_chrome_extension_recorder.png" width="220" /> |
+| Application Target                                                         |                                     Dark Mode                                      |                                     Light Mode                                      |
+| :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------: |
+| **Web Cloud Dashboard** <br> _Manage & stream all your recordings_         |     <img src="apps/web/public/demos/dark_web_app_recorder.png" width="400" />      |     <img src="apps/web/public/demos/light_web_app_recorder.png" width="400" />      |
+| **Desktop Native App** <br> _Local high-performance capture client_        |        <img src="apps/web/public/demos/dark_desktop_app.png" width="400" />        |        <img src="apps/web/public/demos/light_desktop_app.png" width="400" />        |
+| **Desktop Studio Controls** <br> _Sleek floating studio controls overlay_  |      <img src="apps/web/public/demos/dark_desktop_studio.png" width="400" />       |      <img src="apps/web/public/demos/light_desktop_studio.png" width="400" />       |
+| **Chrome Extension Recorder** <br> _Browser tab & window instant capturer_ | <img src="apps/web/public/demos/dark_chrome_extension_recorder.png" width="220" /> | <img src="apps/web/public/demos/light_chrome_extension_recorder.png" width="220" /> |
 
 ---
 
@@ -74,6 +74,7 @@ This monorepo is managed by [Turborepo](https://turbo.build/) and strictly organ
 ## 💻 Getting Started & Installation
 
 ### Prerequisites
+
 - Node.js (v20+)
 - pnpm (v9+)
 - PostgreSQL Database (Neon suggested)
@@ -82,24 +83,28 @@ This monorepo is managed by [Turborepo](https://turbo.build/) and strictly organ
 ### Setup & Run
 
 1. **Clone the Repository**
+
    ```bash
    git clone https://github.com/lwshakib/capture-screen-recorder.git
    cd capture-screen-recorder
    ```
 
 2. **Install Package Dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Configure Environment Variables**
    Rename `apps/web/.env.example` to `apps/web/.env` and insert your database credentials:
+
    ```bash
    cp apps/web/.env.example apps/web/.env
    ```
 
 4. **Initialize Database Schemas**
    Push the Prisma schemas directly to your PostgreSQL database:
+
    ```bash
    cd apps/web
    pnpm prisma db push
@@ -108,6 +113,7 @@ This monorepo is managed by [Turborepo](https://turbo.build/) and strictly organ
 
 5. **Run in Development Mode**
    Spin up all apps (Web, Desktop, Extension) concurrently with a single command:
+
    ```bash
    pnpm dev
    ```

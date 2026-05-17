@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect } from "react"
 
-import { useRecorderContext } from "../context";
-import Footer from "./Footer";
+import { useRecorderContext } from "../context"
+import Footer from "./Footer"
 
 /**
  * ControlLayout Component
@@ -10,29 +10,29 @@ import Footer from "./Footer";
 export default function ControlLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   // Access the getUser function from global recorder context
-  const { getUser } = useRecorderContext();
+  const { getUser } = useRecorderContext()
   // Whenever the component mounts, attempt to fetch user info from the backend using the token on disk
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await window.ipcRenderer.invoke("get-token");
+      const token = await window.ipcRenderer.invoke("get-token")
       if (token && typeof token === "string") {
-        getUser(token);
+        getUser(token)
       }
-    };
-    fetchUser();
-  }, [getUser]);
+    }
+    fetchUser()
+  }, [getUser])
 
   return (
     // Main container with full height and rounded corners
-    <div className="bg-background flex px-1 flex-col rounded-3xl overflow-hidden h-screen ">
+    <div className="flex h-screen flex-col overflow-hidden rounded-3xl bg-background px-1">
       {/* Scrollable/Flexible content area for children */}
-      <div className="flex-1 overflow-hidden flex flex-col">{children}</div>
+      <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
 
       {/* Persistence footer (Logo, Logout button, etc.) */}
       <Footer />
     </div>
-  );
+  )
 }

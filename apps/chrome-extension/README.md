@@ -26,6 +26,7 @@
 ## 🚦 Getting Started
 
 ### 1. Prerequisites
+
 - [Node.js](https://nodejs.org/)
 - [Bun](https://bun.sh/) (Optional)
 

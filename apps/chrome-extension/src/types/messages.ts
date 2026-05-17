@@ -10,56 +10,56 @@ export type MessageAction =
   | "AUTH_START"
   | "AUTH_SUCCESS"
   | "AUTH_ERROR"
-  | "AUTH_STATE";
+  | "AUTH_STATE"
 
 export interface BaseMessage {
-  action: MessageAction;
+  action: MessageAction
 }
 
 export interface ToggleMessage extends BaseMessage {
-  action: "TOGGLE";
+  action: "TOGGLE"
 }
 
 export interface ToggleWebcamMessage extends BaseMessage {
-  action: "TOGGLE_WEBCAM";
+  action: "TOGGLE_WEBCAM"
 }
 
 export interface GetWebcamStateMessage extends BaseMessage {
-  action: "GET_WEBCAM_STATE";
+  action: "GET_WEBCAM_STATE"
 }
 
 export interface WebcamStateMessage extends BaseMessage {
-  action: "WEBCAM_STATE";
+  action: "WEBCAM_STATE"
   payload: {
-    enabled: boolean;
-  };
+    enabled: boolean
+  }
 }
 
 export interface AuthStartMessage extends BaseMessage {
-  action: "AUTH_START";
-  webUrl: string;
+  action: "AUTH_START"
+  webUrl: string
 }
 
 export interface AuthSuccessMessage extends BaseMessage {
-  action: "AUTH_SUCCESS";
+  action: "AUTH_SUCCESS"
   payload: {
-    token: string;
-  };
+    token: string
+  }
 }
 
 export interface AuthErrorMessage extends BaseMessage {
-  action: "AUTH_ERROR";
+  action: "AUTH_ERROR"
   payload: {
-    reason: string;
-  };
+    reason: string
+  }
 }
 
 export interface AuthStateMessage extends BaseMessage {
-  action: "AUTH_STATE";
+  action: "AUTH_STATE"
   payload: {
-    isSignedIn?: boolean;
-    user?: any;
-  };
+    isSignedIn?: boolean
+    user?: any
+  }
 }
 
 export type ExtensionMessage =
@@ -70,5 +70,4 @@ export type ExtensionMessage =
   | AuthStartMessage
   | AuthSuccessMessage
   | AuthErrorMessage
-  | AuthStateMessage;
-
+  | AuthStateMessage

@@ -1,6 +1,6 @@
-import axios from "axios";
-import { env } from "./env";
-import { logger } from "./logger";
+import axios from "axios"
+import { env } from "./env"
+import { logger } from "./logger"
 
 /**
  * httpClient
@@ -9,22 +9,22 @@ import { logger } from "./logger";
  */
 export const httpClient = axios.create({
   baseURL: env.VITE_WEB_URL, // Use validated web URL from environment
-});
+})
 
 // Auth Interceptor: Automatically inject the Bearer token from the local file system
 httpClient.interceptors.request.use(async (config) => {
-    try {
-        const token = await window.ipcRenderer.invoke("get-token");
-        if (token && typeof token === "string") {
-            // Remove wrapping quotes if present from JSON.stringify/parse
-            const cleanToken = token.replace(/^["']+|["']+$/g, "");
-            config.headers.Authorization = `Bearer ${cleanToken}`;
-        }
-    } catch (error) {
-        logger.error("Failed to inject auth token", error);
+  try {
+    const token = await window.ipcRenderer.invoke("get-token")
+    if (token && typeof token === "string") {
+      // Remove wrapping quotes if present from JSON.stringify/parse
+      const cleanToken = token.replace(/^["']+|["']+$/g, "")
+      config.headers.Authorization = `Bearer ${cleanToken}`
     }
-    return config;
-});
+  } catch (error) {
+    logger.error("Failed to inject auth token", error)
+  }
+  return config
+})
 
 // Request Interceptor: Logs every outgoing HTTP request for debugging
 httpClient.interceptors.request.use(
@@ -32,21 +32,21 @@ httpClient.interceptors.request.use(
     logger.debug("HTTP Request", {
       method: config.method,
       url: config.url,
-    });
-    return config;
+    })
+    return config
   },
   (error) => {
     // Log failures that happen before the request is even sent
-    logger.error("HTTP Request Error", error);
-    return Promise.reject(error);
+    logger.error("HTTP Request Error", error)
+    return Promise.reject(error)
   }
-);
+)
 
 // Response Interceptor: centralized error logging for all incoming responses
 httpClient.interceptors.response.use(
   (response) => {
     // Success - pass the response through
-    return response;
+    return response
   },
   (error) => {
     // Log different types of failures (Network vs Server Error)
@@ -55,16 +55,16 @@ httpClient.interceptors.response.use(
       logger.error("HTTP Response Error", error, {
         status: error.response.status,
         data: error.response.data,
-      });
+      })
     } else if (error.request) {
       // The request was made but no response was received (Timeout or Network Down)
       logger.error("HTTP Request Failed", error, {
         message: "No response received from server",
-      });
+      })
     } else {
       // Something happened in setting up the request that triggered an Error
-      logger.error("HTTP Error", error);
+      logger.error("HTTP Error", error)
     }
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)

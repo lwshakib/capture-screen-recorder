@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config"
 import {
   app,
   BrowserWindow,
@@ -10,31 +10,31 @@ import {
   shell,
   Tray,
   Notification,
-} from "electron";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-import { Readable } from 'stream';
-import type { FfmpegCommand } from 'fluent-ffmpeg';
+} from "electron"
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { createRequire } from "node:module"
+import { Readable } from "stream"
+import type { FfmpegCommand } from "fluent-ffmpeg"
 
-const _require = createRequire(import.meta.url);
-const ffmpeg = _require('fluent-ffmpeg');
-const _dirname = path.dirname(fileURLToPath(import.meta.url));
+const _require = createRequire(import.meta.url)
+const ffmpeg = _require("fluent-ffmpeg")
+const _dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Polyfill __dirname and __filename for libraries that expect it in a CJS environment
 // This is necessary because we are running in an ESM environment (created by Vite)
 // but some Electron/Node libraries still rely on CommonJS globals.
-globalThis.__dirname = _dirname;
-globalThis.__filename = fileURLToPath(import.meta.url);
+globalThis.__dirname = _dirname
+globalThis.__filename = fileURLToPath(import.meta.url)
 
-const MAIN_WINDOW_WIDTH = 360;
-const MAIN_WINDOW_HEIGHT = 600;
-const STUDIO_WINDOW_WIDTH = 300;
-const STUDIO_WINDOW_HEIGHT = 48;
-const WEBCAM_WINDOW_SIZE = 220;
-const UPLOAD_WINDOW_WIDTH = 500;
-const UPLOAD_WINDOW_HEIGHT = 200;
+const MAIN_WINDOW_WIDTH = 360
+const MAIN_WINDOW_HEIGHT = 600
+const STUDIO_WINDOW_WIDTH = 300
+const STUDIO_WINDOW_HEIGHT = 48
+const WEBCAM_WINDOW_SIZE = 220
+const UPLOAD_WINDOW_WIDTH = 500
+const UPLOAD_WINDOW_HEIGHT = 200
 
 // The built directory structure
 //
@@ -45,60 +45,60 @@ const UPLOAD_WINDOW_HEIGHT = 200;
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
-process.env.APP_ROOT = path.join(_dirname, "..");
+process.env.APP_ROOT = path.join(_dirname, "..")
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
-export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const studioUrl = VITE_DEV_SERVER_URL + "/studio.html";
-const uploadUrl = VITE_DEV_SERVER_URL + "/upload.html";
-export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"]
+const studioUrl = VITE_DEV_SERVER_URL + "/studio.html"
+const uploadUrl = VITE_DEV_SERVER_URL + "/upload.html"
+export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron")
+export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
-  : RENDERER_DIST;
+  : RENDERER_DIST
 
 // Main window reference (The dashboard/landing page)
-let mainWindow: BrowserWindow | null;
+let mainWindow: BrowserWindow | null
 // Studio window reference (The floating control bar)
-let studioWindow: BrowserWindow | null;
+let studioWindow: BrowserWindow | null
 // Webcam window reference (The circular camera overlay)
-let webcamWindow: BrowserWindow | null;
+let webcamWindow: BrowserWindow | null
 // System tray icon reference
-let tray: Tray | null = null;
+let tray: Tray | null = null
 // Flag to prevent app from quitting when window is closed (macOS style behavior or minimization)
-let isQuiting = false;
+let isQuiting = false
 // Upload window reference (The post-recording modal)
-let uploadWindow: BrowserWindow | null;
+let uploadWindow: BrowserWindow | null
 
 // Streaming state
 interface StreamConfig {
-  rtmpUrl: string;
-  streamKey: string;
-  fps: number;
-  videoBitrate: string;
-  audioBitrate: string;
-  resolution: string;
-  hasAudio?: boolean;
+  rtmpUrl: string
+  streamKey: string
+  fps: number
+  videoBitrate: string
+  audioBitrate: string
+  resolution: string
+  hasAudio?: boolean
 }
 
-let ffmpegCommand: FfmpegCommand | null = null;
-let inputStream: Readable | null = null;
+let ffmpegCommand: FfmpegCommand | null = null
+let inputStream: Readable | null = null
 
 // Helper to get the correct icon path based on platform
 const getIconPath = () => {
-  const iconExt = process.platform === "win32" ? "ico" : "png";
-  return path.join(process.env.VITE_PUBLIC, `logo.${iconExt}`);
-};
+  const iconExt = process.platform === "win32" ? "ico" : "png"
+  return path.join(process.env.VITE_PUBLIC, `logo.${iconExt}`)
+}
 
 function createTray() {
   if (tray) {
-    tray.destroy();
+    tray.destroy()
   }
 
-  const iconPath = getIconPath();
-  const image = nativeImage.createFromPath(iconPath);
-  tray = new Tray(image);
+  const iconPath = getIconPath()
+  const image = nativeImage.createFromPath(iconPath)
+  tray = new Tray(image)
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -106,34 +106,34 @@ function createTray() {
       click: () => {
         // Restore/Show Main Window if it exists
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.show();
+          mainWindow.show()
         }
         // Restore/Show Studio Window if it exists
         if (studioWindow && !studioWindow.isDestroyed()) {
-          studioWindow.show();
+          studioWindow.show()
         }
       },
     },
     {
       label: "Quit App",
       click: () => {
-        isQuiting = true;
-        app.quit();
+        isQuiting = true
+        app.quit()
       },
     },
-  ]);
+  ])
 
-  tray.setToolTip("Capture desktop");
-  tray.setContextMenu(contextMenu);
+  tray.setToolTip("Capture desktop")
+  tray.setContextMenu(contextMenu)
 
   tray.on("click", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.show();
+      mainWindow.show()
     }
     if (studioWindow && !studioWindow.isDestroyed()) {
-      studioWindow.show();
+      studioWindow.show()
     }
-  });
+  })
 }
 
 function createWindow() {
@@ -156,30 +156,30 @@ function createWindow() {
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
-  });
+  })
 
   // Test active push message to Renderer-process.
   mainWindow.webContents.on("did-finish-load", () => {
     mainWindow?.webContents.send(
       "main-process-message",
       new Date().toLocaleString()
-    );
-  });
+    )
+  })
 
   if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools({ mode: "detach" });
+    mainWindow.loadURL(VITE_DEV_SERVER_URL)
+    mainWindow.webContents.openDevTools({ mode: "detach" })
   } else {
     // mainWindow.loadFile('dist/index.html')
-    mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
+    mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"))
   }
 
   mainWindow.on("close", (e) => {
     if (!isQuiting) {
-      e.preventDefault();
-      mainWindow?.hide();
+      e.preventDefault()
+      mainWindow?.hide()
     }
-  });
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -187,124 +187,122 @@ function createWindow() {
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    isQuiting = true;
-    app.quit();
-    mainWindow = null;
-    studioWindow = null;
+    isQuiting = true
+    app.quit()
+    mainWindow = null
+    studioWindow = null
   }
-});
+})
 
 app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createWindow()
   }
-});
+})
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(
-      "capture",
-      process.execPath,
-      [path.resolve(process.argv[1])]
-    );
+    app.setAsDefaultProtocolClient("capture", process.execPath, [
+      path.resolve(process.argv[1]),
+    ])
   }
 } else {
-  app.setAsDefaultProtocolClient("capture");
+  app.setAsDefaultProtocolClient("capture")
 }
 
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
-  app.quit();
+  app.quit()
 } else {
   app.on("second-instance", (_event, commandLine) => {
     // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
     }
     // the commandLine is array of strings in which last element is deep link url
-    const token = commandLine.pop()?.split("=").pop();
+    const token = commandLine.pop()?.split("=").pop()
 
     // Send the auth token to the renderer process
-    mainWindow?.webContents.send("auth-token", token);
-  });
+    mainWindow?.webContents.send("auth-token", token)
+  })
 
   // Create win, load the rest of the app, etc...
   app.whenReady().then(() => {
-    const ffmpegInstaller = _require('@ffmpeg-installer/ffmpeg');
-    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-    createWindow();
-    createTray();
-  });
+    const ffmpegInstaller = _require("@ffmpeg-installer/ffmpeg")
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+    createWindow()
+    createTray()
+  })
 }
 
 // IPC handlers
-const CAPTURE_DIR = path.join(app.getPath("home"), ".capture");
-const TOKEN_FILE = path.join(CAPTURE_DIR, "token.json");
+const CAPTURE_DIR = path.join(app.getPath("home"), ".capture")
+const TOKEN_FILE = path.join(CAPTURE_DIR, "token.json")
 
 // Ensure .capture directory exists
 if (!fs.existsSync(CAPTURE_DIR)) {
-  fs.mkdirSync(CAPTURE_DIR, { recursive: true });
+  fs.mkdirSync(CAPTURE_DIR, { recursive: true })
 }
 
 ipcMain.handle("save-token", (_, token: string) => {
   try {
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ token }));
-    return true;
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ token }))
+    return true
   } catch (error) {
-    console.error("Failed to save token:", error);
-    return false;
+    console.error("Failed to save token:", error)
+    return false
   }
-});
+})
 
 ipcMain.handle("get-token", () => {
   try {
     if (fs.existsSync(TOKEN_FILE)) {
-      const data = fs.readFileSync(TOKEN_FILE, "utf-8");
-      return JSON.parse(data).token;
+      const data = fs.readFileSync(TOKEN_FILE, "utf-8")
+      return JSON.parse(data).token
     }
-    return null;
+    return null
   } catch (error) {
-    console.error("Failed to read token:", error);
-    return null;
+    console.error("Failed to read token:", error)
+    return null
   }
-});
+})
 
 ipcMain.handle("remove-token", () => {
   try {
     if (fs.existsSync(TOKEN_FILE)) {
-      fs.unlinkSync(TOKEN_FILE);
+      fs.unlinkSync(TOKEN_FILE)
     }
-    return true;
+    return true
   } catch (error) {
-    console.error("Failed to remove token:", error);
-    return false;
+    console.error("Failed to remove token:", error)
+    return false
   }
-});
+})
 
 ipcMain.on("closeApp", () => {
-  isQuiting = true;
-  app.quit();
-});
+  isQuiting = true
+  app.quit()
+})
 
 ipcMain.on("login", (_, redirectUrl: string) => {
   // Use dot notation so Vite's define can replace it at build time
   try {
-    console.log("Opening login URL:", redirectUrl);
-    shell.openExternal(redirectUrl);
+    console.log("Opening login URL:", redirectUrl)
+    shell.openExternal(redirectUrl)
   } catch (error) {
-    console.error("Error opening login URL:", error);
+    console.error("Error opening login URL:", error)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("login-error", {
         message:
           error instanceof Error ? error.message : "Failed to open login page",
-      });
+      })
     }
   }
-});
+})
 
 // IPC Handler: Get available screen/window sources for recording
 ipcMain.handle("get-sources", async () => {
@@ -314,71 +312,71 @@ ipcMain.handle("get-sources", async () => {
       types: ["screen", "window"],
       thumbnailSize: { width: 240, height: 135 },
       fetchWindowIcons: true,
-    });
-    return sources;
+    })
+    return sources
   } catch (error) {
-    console.error("Error getting desktop sources:", error);
-    return [];
+    console.error("Error getting desktop sources:", error)
+    return []
   }
-});
+})
 
 // IPC Handler: Calculate supported recording resolutions based on current display(s)
 ipcMain.handle("get-supported-resolutions", async () => {
   try {
     // Get all connected displays from Electron's screen module
-    const displays = screen.getAllDisplays();
+    const displays = screen.getAllDisplays()
 
     // Create available resolution options based on available displays
-    const resolutions: string[] = [];
+    const resolutions: string[] = []
 
     displays.forEach((display) => {
-      const { width: displayWidth, height: displayHeight } = display.size;
+      const { width: displayWidth, height: displayHeight } = display.size
 
       // Always add the display's native resolution
-      resolutions.push(`${displayHeight}p(${displayWidth}x${displayHeight})`);
+      resolutions.push(`${displayHeight}p(${displayWidth}x${displayHeight})`)
 
       // Add common standard resolutions if the display supports them
       if (displayWidth >= 1920 && displayHeight >= 1080) {
         // ... (standard resolutions logic)
-        resolutions.push("1080p(1920x1080)");
-        resolutions.push("720p(1280x720)");
-        resolutions.push("480p(854x480)");
-        resolutions.push("360p(640x360)");
-        resolutions.push("240p(426x240)");
-        resolutions.push("144p(256x144)");
+        resolutions.push("1080p(1920x1080)")
+        resolutions.push("720p(1280x720)")
+        resolutions.push("480p(854x480)")
+        resolutions.push("360p(640x360)")
+        resolutions.push("240p(426x240)")
+        resolutions.push("144p(256x144)")
       } else if (displayWidth >= 1280 && displayHeight >= 720) {
-        resolutions.push("720p(1280x720)");
-        resolutions.push("480p(854x480)");
-        resolutions.push("360p(640x360)");
-        resolutions.push("240p(426x240)");
-        resolutions.push("144p(256x144)");
+        resolutions.push("720p(1280x720)")
+        resolutions.push("480p(854x480)")
+        resolutions.push("360p(640x360)")
+        resolutions.push("240p(426x240)")
+        resolutions.push("144p(256x144)")
       } else if (displayWidth >= 854 && displayHeight >= 480) {
-        resolutions.push("480p(854x480)");
-        resolutions.push("360p(640x360)");
-        resolutions.push("240p(426x240)");
-        resolutions.push("144p(256x144)");
+        resolutions.push("480p(854x480)")
+        resolutions.push("360p(640x360)")
+        resolutions.push("240p(426x240)")
+        resolutions.push("144p(256x144)")
       } else if (displayWidth >= 640 && displayHeight >= 360) {
-        resolutions.push("360p(640x360)");
-        resolutions.push("240p(426x240)");
-        resolutions.push("144p(256x144)");
+        resolutions.push("360p(640x360)")
+        resolutions.push("240p(426x240)")
+        resolutions.push("144p(256x144)")
       } else if (displayWidth >= 426 && displayHeight >= 240) {
-        resolutions.push("240p(426x240)");
-        resolutions.push("144p(256x144)");
+        resolutions.push("240p(426x240)")
+        resolutions.push("144p(256x144)")
       } else if (displayWidth >= 256 && displayHeight >= 144) {
-        resolutions.push("144p(256x144)");
+        resolutions.push("144p(256x144)")
       }
-    });
+    })
 
     // Remove duplicates and sort by resolution height (highest first)
     const uniqueResolutions = [...new Set(resolutions)].sort((a, b) => {
-      const heightA = parseInt(a.match(/(\d+)p/)?.[1] || "0");
-      const heightB = parseInt(b.match(/(\d+)p/)?.[1] || "0");
-      return heightB - heightA;
-    });
+      const heightA = parseInt(a.match(/(\d+)p/)?.[1] || "0")
+      const heightB = parseInt(b.match(/(\d+)p/)?.[1] || "0")
+      return heightB - heightA
+    })
 
-    return uniqueResolutions;
+    return uniqueResolutions
   } catch (error) {
-    console.error("Error getting supported resolutions:", error);
+    console.error("Error getting supported resolutions:", error)
     // Fallback to basic resolutions if error occurs
     return [
       "720p(1280x720)",
@@ -386,18 +384,18 @@ ipcMain.handle("get-supported-resolutions", async () => {
       "360p(640x360)",
       "240p(426x240)",
       "144p(256x144)",
-    ];
+    ]
   }
-});
+})
 
 ipcMain.on("logout", () => {
-  studioWindow?.close();
-});
+  studioWindow?.close()
+})
 
 // IPC Handler: Open the 'Studio' window (Small floating control bar)
 ipcMain.on("open-studio", () => {
-  if (studioWindow) return; // Prevent multiple studio windows
-  
+  if (studioWindow) return // Prevent multiple studio windows
+
   studioWindow = new BrowserWindow({
     icon: nativeImage.createFromPath(getIconPath()),
     frame: false, // Removes the OS window frame for the floating control bar
@@ -424,55 +422,55 @@ ipcMain.on("open-studio", () => {
       webSecurity: true,
       allowRunningInsecureContent: false,
     },
-  });
-  studioWindow?.loadURL(studioUrl);
-  studioWindow.webContents.openDevTools({ mode: "detach" });
-});
+  })
+  studioWindow?.loadURL(studioUrl)
+  studioWindow.webContents.openDevTools({ mode: "detach" })
+})
 
 // Handle theme synchronization between windows
 ipcMain.on("theme-changed", (_, theme) => {
   // Broadcast theme change to all windows
-  const windows = BrowserWindow.getAllWindows();
-  console.log("theme-changed", theme);
+  const windows = BrowserWindow.getAllWindows()
+  console.log("theme-changed", theme)
   windows.forEach((window) => {
     if (!window.isDestroyed()) {
-      window.webContents.send("theme-changed", theme);
+      window.webContents.send("theme-changed", theme)
     }
-  });
-});
+  })
+})
 
-const SETTINGS_FILE = path.join(CAPTURE_DIR, "settings.json");
+const SETTINGS_FILE = path.join(CAPTURE_DIR, "settings.json")
 
 // IPC Handler: Load persisted settings from settings.json
 ipcMain.handle("get-settings", () => {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
-      const data = fs.readFileSync(SETTINGS_FILE, "utf-8");
-      const settings = JSON.parse(data);
+      const data = fs.readFileSync(SETTINGS_FILE, "utf-8")
+      const settings = JSON.parse(data)
       // Always override isStreamingEnabled to false on startup (per user request)
-      settings.isStreamingEnabled = false;
-      return settings;
+      settings.isStreamingEnabled = false
+      return settings
     }
-    return {};
+    return {}
   } catch (error) {
-    console.error("Failed to read settings:", error);
-    return {};
+    console.error("Failed to read settings:", error)
+    return {}
   }
-});
+})
 
 // Handle settings synchronization to studio window and save to settings.json
 ipcMain.on("settings-changed", (_, settings) => {
   try {
     // Persist settings to settings.json in .capture folder
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
   } catch (error) {
-    console.error("Failed to save settings:", error);
+    console.error("Failed to save settings:", error)
   }
 
   if (studioWindow && !studioWindow.isDestroyed()) {
-    studioWindow.webContents.send("settings-updated", settings);
+    studioWindow.webContents.send("settings-updated", settings)
   }
-});
+})
 
 // Toggle webcam window
 // IPC Handler: Toggle the webcam overlay window
@@ -480,8 +478,8 @@ ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
   if (payload?.enabled) {
     // If webcam window already exists, just show it
     if (webcamWindow && !webcamWindow.isDestroyed()) {
-      webcamWindow.show();
-      return;
+      webcamWindow.show()
+      return
     }
 
     // Create a new circular/overlay webcam window
@@ -514,56 +512,56 @@ ipcMain.on("webcam:toggle", (_event, payload: { enabled: boolean }) => {
         webSecurity: true,
         allowRunningInsecureContent: false,
       },
-    });
+    })
 
     if (VITE_DEV_SERVER_URL) {
-      const camUrl = new URL("webcam.html", VITE_DEV_SERVER_URL).toString();
-      webcamWindow.loadURL(camUrl);
+      const camUrl = new URL("webcam.html", VITE_DEV_SERVER_URL).toString()
+      webcamWindow.loadURL(camUrl)
     } else {
-      webcamWindow.loadFile(path.join(RENDERER_DIST, "webcam.html"));
+      webcamWindow.loadFile(path.join(RENDERER_DIST, "webcam.html"))
     }
 
     // Ensure the webcam stays on top even of fullscreen apps
-    webcamWindow.setAlwaysOnTop(true, "screen-saver");
+    webcamWindow.setAlwaysOnTop(true, "screen-saver")
     try {
       webcamWindow.setVisibleOnAllWorkspaces(true, {
         visibleOnFullScreen: true,
-      });
+      })
     } catch (_) {
       // older Electron versions may not support the options signature
-      webcamWindow.setVisibleOnAllWorkspaces(true);
+      webcamWindow.setVisibleOnAllWorkspaces(true)
     }
   } else {
     // Hide/Close if disabled
     if (webcamWindow && !webcamWindow.isDestroyed()) {
-      webcamWindow.close();
-      webcamWindow = null;
+      webcamWindow.close()
+      webcamWindow = null
     }
   }
-});
+})
 
 ipcMain.on("hideToTray", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.hide();
+    mainWindow.hide()
   }
   if (studioWindow && !studioWindow.isDestroyed()) {
-    studioWindow.hide();
+    studioWindow.hide()
   }
-});
+})
 
 // Hide main window when recording starts
 ipcMain.on("recording:started", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.hide();
+    mainWindow.hide()
   }
-});
+})
 
 // Show main window when recording stops
 ipcMain.on("recording:stopped", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.show();
+    mainWindow.show()
   }
-});
+})
 
 // IPC Handler: Receive recording video chunks from renderer
 ipcMain.on(
@@ -571,58 +569,63 @@ ipcMain.on(
   async (_, data: { data: []; filename: string }) => {
     try {
       // Get the user's Videos directory
-      const videosDir = path.join(app.getPath("videos"), "Capture");
+      const videosDir = path.join(app.getPath("videos"), "Capture")
 
       // Create Capture directory if it doesn't exist
       if (!fs.existsSync(videosDir)) {
-        fs.mkdirSync(videosDir, { recursive: true });
+        fs.mkdirSync(videosDir, { recursive: true })
       }
 
       // Create the full file path for dragging saving
-      const filePath = path.join(videosDir, data.filename);
+      const filePath = path.join(videosDir, data.filename)
 
       // Convert the data array to a Buffer and append to file
       // This allows writing large files incrementally as chunks arrive
-      const buffer = Buffer.isBuffer(data.data) ? data.data : Buffer.from(data.data);
-      fs.appendFileSync(filePath, buffer);
+      const buffer = Buffer.isBuffer(data.data)
+        ? data.data
+        : Buffer.from(data.data)
+      fs.appendFileSync(filePath, buffer)
 
-      console.log(`Chunk saved to: ${filePath}`);
+      console.log(`Chunk saved to: ${filePath}`)
     } catch (error) {
-      console.error("Error saving recording:", error);
+      console.error("Error saving recording:", error)
       // Notify the renderer process if saving fails
       if (uploadWindow && !uploadWindow.isDestroyed()) {
         uploadWindow.webContents.send("recording-save-error", {
           error: error instanceof Error ? error.message : "Unknown error",
-        });
+        })
       }
     }
   }
-);
+)
 
 ipcMain.on("open-this", (_, url: string) => {
-  shell.openExternal(url);
+  shell.openExternal(url)
   if (uploadWindow) {
-    uploadWindow.hide();
+    uploadWindow.hide()
   }
-});
+})
 
 ipcMain.on("open-url", (_, url: string) => {
-  console.log("Opening URL:", url);
-  shell.openExternal(url);
+  console.log("Opening URL:", url)
+  shell.openExternal(url)
   if (uploadWindow) {
-    uploadWindow.hide();
+    uploadWindow.hide()
   }
-});
+})
 
 // IPC Handler: Finish recording and open the upload/preview window
 ipcMain.on(
   "save-recording",
-  (_, data: { data: number[]; filename: string; isCloudUploadEnabled?: boolean }) => {
+  (
+    _,
+    data: { data: number[]; filename: string; isCloudUploadEnabled?: boolean }
+  ) => {
     console.log("Received save-recording request:", {
       filename: data.filename,
       dataLength: data.data.length,
       isCloudUploadEnabled: data.isCloudUploadEnabled,
-    });
+    })
 
     // Skip cloud upload window and save purely locally if setting is off
     if (data.isCloudUploadEnabled === false) {
@@ -630,9 +633,9 @@ ipcMain.on(
         new Notification({
           title: "Capture Screen Recorder",
           body: `Recording saved successfully to Videos/Capture/${data.filename}`,
-        }).show();
+        }).show()
       }
-      return;
+      return
     }
 
     if (uploadWindow && !uploadWindow.isDestroyed()) {
@@ -642,10 +645,10 @@ ipcMain.on(
         blob: data.data, // This will be converted to Blob in the renderer
         filename: data.filename,
         mimeType: "video/webm", // Default mime type
-      };
-      
-      uploadWindow.webContents.send("recording-data", recordingData);
-      uploadWindow.show();
+      }
+
+      uploadWindow.webContents.send("recording-data", recordingData)
+      uploadWindow.show()
     } else {
       // Create new upload window if it doesn't exist
       // Create new upload window if it doesn't exist
@@ -670,14 +673,14 @@ ipcMain.on(
           webSecurity: true,
           allowRunningInsecureContent: false,
         },
-      });
+      })
 
       // Load the upload page
       if (VITE_DEV_SERVER_URL) {
-        uploadWindow.loadURL(uploadUrl);
-        uploadWindow.webContents.openDevTools({ mode: "detach" });
+        uploadWindow.loadURL(uploadUrl)
+        uploadWindow.webContents.openDevTools({ mode: "detach" })
       } else {
-        uploadWindow.loadFile(path.join(RENDERER_DIST, "upload.html"));
+        uploadWindow.loadFile(path.join(RENDERER_DIST, "upload.html"))
       }
 
       // Send the recording data once the window is actually loaded
@@ -685,182 +688,186 @@ ipcMain.on(
       uploadWindow.webContents.on("did-finish-load", () => {
         const recordingData = {
           type: "video-blob",
-          blob: data.data, 
+          blob: data.data,
           filename: data.filename,
           mimeType: "video/webm",
-        };
-        uploadWindow?.webContents.send("recording-data", recordingData);
-      });
+        }
+        uploadWindow?.webContents.send("recording-data", recordingData)
+      })
 
       // Handle window close
       uploadWindow.on("closed", () => {
-        uploadWindow = null;
-      });
+        uploadWindow = null
+      })
     }
   }
-);
+)
 
 // Handle upload window close
 ipcMain.on("close-upload-window", () => {
   if (uploadWindow && !uploadWindow.isDestroyed()) {
-    uploadWindow.destroy();
-    uploadWindow = null;
+    uploadWindow.destroy()
+    uploadWindow = null
   }
-});
+})
 
 // Handle upload window minimize
 ipcMain.on("minimize-upload-window", () => {
   if (uploadWindow && !uploadWindow.isDestroyed()) {
-    uploadWindow.minimize();
+    uploadWindow.minimize()
   }
-});
+})
 
 // Live Streaming IPC Handlers
 // IPC Handler: Start Live Streaming via FFmpeg
 ipcMain.on("streaming:start", (event, config: StreamConfig) => {
-  console.log("Starting live stream with config:", config);
+  console.log("Starting live stream with config:", config)
 
   // Stop any existing stream before starting a new one
   if (ffmpegCommand) {
-    console.warn("Stream already running, stopping previous one.");
-    ffmpegCommand.kill("SIGINT");
-    ffmpegCommand = null;
+    console.warn("Stream already running, stopping previous one.")
+    ffmpegCommand.kill("SIGINT")
+    ffmpegCommand = null
   }
 
   try {
     // Create a readable stream to feed video data into FFmpeg
     inputStream = new Readable({
-      read() {} // No-op, we push data manually
-    });
+      read() {}, // No-op, we push data manually
+    })
 
     // Construct the RTMP URL
-    const baseUrl = config.rtmpUrl.endsWith('/') ? config.rtmpUrl.slice(0, -1) : config.rtmpUrl;
-    const fullRtmpUrl = `${baseUrl}/${config.streamKey}`;
-    const [width, height] = config.resolution.split('x').map(num => parseInt(num) || 0);
+    const baseUrl = config.rtmpUrl.endsWith("/")
+      ? config.rtmpUrl.slice(0, -1)
+      : config.rtmpUrl
+    const fullRtmpUrl = `${baseUrl}/${config.streamKey}`
+    const [width, height] = config.resolution
+      .split("x")
+      .map((num) => parseInt(num) || 0)
 
     // Initial FFmpeg command setup
     let cmd = ffmpeg(inputStream)
-      .inputFormat('webm') // Explicitly tell FFmpeg the input is WebM (from MediaRecorder)
+      .inputFormat("webm") // Explicitly tell FFmpeg the input is WebM (from MediaRecorder)
       .inputOptions([
-        '-analyzeduration 0', // Reduce delay
-        '-probesize 32',      // Reduce delay
-        '-fflags +genpts+igndts', // igndts helps with erratic timestamps from browser MediaRecorder
-        '-thread_queue_size 1024' // Increase buffer to avoid "thread_queue_size" warnings
+        "-analyzeduration 0", // Reduce delay
+        "-probesize 32", // Reduce delay
+        "-fflags +genpts+igndts", // igndts helps with erratic timestamps from browser MediaRecorder
+        "-thread_queue_size 1024", // Increase buffer to avoid "thread_queue_size" warnings
       ])
-      .videoCodec('libx264');
+      .videoCodec("libx264")
 
     if (config.hasAudio !== false) {
-      cmd = cmd
-        .audioCodec('aac')
-        .audioBitrate(config.audioBitrate || '128k');
+      cmd = cmd.audioCodec("aac").audioBitrate(config.audioBitrate || "128k")
     } else {
       // Add a virtual silent audio input to satisfy YouTube RTMP ingest requirements for silent streams
       cmd = cmd
-        .input('anullsrc=channel_layout=stereo:sample_rate=44100')
-        .inputFormat('lavfi')
-        .audioCodec('aac')
-        .audioBitrate(config.audioBitrate || '128k');
+        .input("anullsrc=channel_layout=stereo:sample_rate=44100")
+        .inputFormat("lavfi")
+        .audioCodec("aac")
+        .audioBitrate(config.audioBitrate || "128k")
     }
 
     cmd = cmd
-      .videoBitrate(config.videoBitrate || '2500k')
+      .videoBitrate(config.videoBitrate || "2500k")
       .fps(config.fps || 30)
-      .size(`${width}x${height}`);
+      .size(`${width}x${height}`)
 
     const outputOptionsList = [
-      '-preset ultrafast', // Use lowest CPU usage, sacrificing compression efficiency
-      '-tune zerolatency', // Optimize for low latency (essential for live streams)
+      "-preset ultrafast", // Use lowest CPU usage, sacrificing compression efficiency
+      "-tune zerolatency", // Optimize for low latency (essential for live streams)
       `-g ${config.fps * 2}`, // Keyframe interval (GOP size) - 2 seconds usually recommended for streaming
       `-keyint_min ${config.fps}`,
-      '-crf 23', // Constant Rate Factor (Quality) - Lower is better. 23 is default for x264.
-      '-pix_fmt yuv420p', // Ensure compatibility with most players
-      '-sc_threshold 0', // Disable scene change detection
-      '-profile:v main', // Main profile is widely supported
-      '-level 3.1',
-      '-maxrate 4000k', // Max bitrate burst
-      '-bufsize 8000k', // Buffer size for bitrate control
-      '-f flv', // FLV container required for RTMP
-      '-flvflags no_duration_filesize' // Optimization for streaming
-    ];
+      "-crf 23", // Constant Rate Factor (Quality) - Lower is better. 23 is default for x264.
+      "-pix_fmt yuv420p", // Ensure compatibility with most players
+      "-sc_threshold 0", // Disable scene change detection
+      "-profile:v main", // Main profile is widely supported
+      "-level 3.1",
+      "-maxrate 4000k", // Max bitrate burst
+      "-bufsize 8000k", // Buffer size for bitrate control
+      "-f flv", // FLV container required for RTMP
+      "-flvflags no_duration_filesize", // Optimization for streaming
+    ]
 
     if (config.hasAudio !== false) {
       outputOptionsList.push(
-        '-map 0:v',
-        '-map 0:a?', // Optional mapping: if audio track is missing or delayed, do not fail
-        '-ar 44100', // Audio sample rate
-        '-b:a 128k'  // Audio bitrate
-      );
+        "-map 0:v",
+        "-map 0:a?", // Optional mapping: if audio track is missing or delayed, do not fail
+        "-ar 44100", // Audio sample rate
+        "-b:a 128k" // Audio bitrate
+      )
     } else {
       outputOptionsList.push(
-        '-map 0:v',
-        '-map 1:a',  // Map virtual silent audio track
-        '-ar 44100', // Audio sample rate
-        '-b:a 128k'  // Audio bitrate
-      );
+        "-map 0:v",
+        "-map 1:a", // Map virtual silent audio track
+        "-ar 44100", // Audio sample rate
+        "-b:a 128k" // Audio bitrate
+      )
     }
 
     ffmpegCommand = cmd
       .outputOptions(outputOptionsList)
       .output(fullRtmpUrl)
       // Event Handlers
-      .on('start', (commandLine: string) => {
-        console.log("YouTube streaming");
-        console.log('FFmpeg process started with command:', commandLine);
-        event.reply('streaming:started');
+      .on("start", (commandLine: string) => {
+        console.log("YouTube streaming")
+        console.log("FFmpeg process started with command:", commandLine)
+        event.reply("streaming:started")
       })
-      .on('stderr', (stderrLine: string) => {
+      .on("stderr", (stderrLine: string) => {
         // Log all FFmpeg output for debugging purposes
-        if (stderrLine.includes('error') || stderrLine.includes('Error')) {
-           console.error('FFmpeg Log:', stderrLine);
+        if (stderrLine.includes("error") || stderrLine.includes("Error")) {
+          console.error("FFmpeg Log:", stderrLine)
         } else {
-           console.log('FFmpeg Log:', stderrLine);
+          console.log("FFmpeg Log:", stderrLine)
         }
       })
-      .on('error', (err: Error, _stdout: string, stderr: string) => {
-        console.error('FFmpeg error:', err.message);
-        console.error('FFmpeg stderr:', stderr);
-        event.reply('streaming:error', { error: err.message });
-        ffmpegCommand = null;
-        inputStream = null;
+      .on("error", (err: Error, _stdout: string, stderr: string) => {
+        console.error("FFmpeg error:", err.message)
+        console.error("FFmpeg stderr:", stderr)
+        event.reply("streaming:error", { error: err.message })
+        ffmpegCommand = null
+        inputStream = null
       })
-      .on('end', () => {
-        console.log('FFmpeg process ended');
-        event.reply('streaming:stopped');
-        ffmpegCommand = null;
-        inputStream = null;
-      });
+      .on("end", () => {
+        console.log("FFmpeg process ended")
+        event.reply("streaming:stopped")
+        ffmpegCommand = null
+        inputStream = null
+      })
 
     if (ffmpegCommand) {
-      ffmpegCommand.run();
+      ffmpegCommand.run()
     }
   } catch (error) {
-    console.error('Error starting stream:', error);
-    event.reply('streaming:error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    console.error("Error starting stream:", error)
+    event.reply("streaming:error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    })
   }
-});
+})
 
 // IPC Handler: Receive streaming data chunks from Renderer
 ipcMain.on("streaming:data", (_, data: ArrayBuffer) => {
   if (inputStream) {
     try {
       // Push the data chunk into the FFmpeg input stream
-      inputStream.push(Buffer.from(data));
+      inputStream.push(Buffer.from(data))
     } catch (error) {
-      console.error('Error pushing data to FFmpeg:', error);
+      console.error("Error pushing data to FFmpeg:", error)
     }
   }
-});
+})
 
 // IPC Handler: Stop the live stream
 ipcMain.on("streaming:stop", (event) => {
-  console.log("Stopping live stream requested.");
+  console.log("Stopping live stream requested.")
   // Signal EOF to input stream
   if (inputStream) {
-    inputStream.push(null);
+    inputStream.push(null)
   }
   // Kill FFmpeg process
   if (ffmpegCommand) {
-    ffmpegCommand.kill("SIGINT");
+    ffmpegCommand.kill("SIGINT")
   }
-  event.reply('streaming:stopped');
-});
+  event.reply("streaming:stopped")
+})

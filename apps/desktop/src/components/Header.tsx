@@ -1,7 +1,11 @@
-import { X } from "lucide-react";
-import { useRecorderContext } from "../context";
-import { ModeToggle } from "./mode-toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import { X } from "lucide-react"
+import { useRecorderContext } from "../context"
+import { ModeToggle } from "./mode-toggle"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar"
 
 /**
  * Header Component
@@ -9,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/av
  */
 export default function Header() {
   // Retrieve current user from context
-  const { user } = useRecorderContext();
+  const { user } = useRecorderContext()
 
   /**
    * Tells the main process to hide the current window to the system tray
@@ -17,14 +21,13 @@ export default function Header() {
   const handleCloseToTray = () => {
     // Communication with Electron's main process via IPC
     if (window.ipcRenderer) {
-      window.ipcRenderer.send("hideToTray");
+      window.ipcRenderer.send("hideToTray")
     }
-  };
-
+  }
 
   return (
     // Header container with drag support
-    <div className="flex justify-between items-center p-5 draggable">
+    <div className="draggable flex items-center justify-between p-5">
       <span className="non-draggable">
         <div className="flex items-center gap-2">
           {/* User profile avatar */}
@@ -38,13 +41,13 @@ export default function Header() {
           <ModeToggle />
         </div>
       </span>
-      <div className="flex items-center gap-2 non-draggable">
+      <div className="non-draggable flex items-center gap-2">
         {/* Close/Minimize button */}
         <X
-          className="w-6 h-6 cursor-pointer hover:text-red-500 transition-colors"
+          className="h-6 w-6 cursor-pointer transition-colors hover:text-red-500"
           onClick={handleCloseToTray}
         />
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import { WEB_URL } from "./constants";
+import { WEB_URL } from "./constants"
 
 /**
  * Environment variable validation and type-safe access
@@ -7,4 +7,4 @@ import { WEB_URL } from "./constants";
 
 export const env = {
   VITE_WEB_URL: WEB_URL,
-};
+}

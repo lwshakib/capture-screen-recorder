@@ -1,5 +1,5 @@
-import { defineManifest } from "@crxjs/vite-plugin";
-import pkg from "./package.json" with { type: "json" };
+import { defineManifest } from "@crxjs/vite-plugin"
+import pkg from "./package.json" with { type: "json" }
 
 export default defineManifest({
   manifest_version: 3,
@@ -21,7 +21,14 @@ export default defineManifest({
     },
     default_title: "Capture Studio",
   },
-  permissions: ["activeTab", "tabs", "identity", "storage", "scripting", "sidePanel"],
+  permissions: [
+    "activeTab",
+    "tabs",
+    "identity",
+    "storage",
+    "scripting",
+    "sidePanel",
+  ],
   host_permissions: ["<all_urls>"],
   side_panel: {
     default_path: "src/sidepanel/index.html",
@@ -42,4 +49,4 @@ export default defineManifest({
       matches: ["<all_urls>"],
     },
   ],
-});
+})

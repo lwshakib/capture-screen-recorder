@@ -1,29 +1,36 @@
-import { useRecorderContext } from "@/context/index";
-import { logger } from "@/lib/logger";
-import { AlertCircle, CheckCircle, Monitor, RefreshCw, Video, Cloud } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import Header from "./Header";
-import PreviewScreen from "./PreviewScreen";
-import { Alert, AlertDescription } from "@workspace/ui/components/alert";
-import { Switch } from "@workspace/ui/components/switch";
-import { Input } from "@workspace/ui/components/input";
+import { useRecorderContext } from "@/context/index"
+import { logger } from "@/lib/logger"
+import {
+  AlertCircle,
+  CheckCircle,
+  Monitor,
+  RefreshCw,
+  Video,
+  Cloud,
+} from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import Header from "./Header"
+import PreviewScreen from "./PreviewScreen"
+import { Alert, AlertDescription } from "@workspace/ui/components/alert"
+import { Switch } from "@workspace/ui/components/switch"
+import { Input } from "@workspace/ui/components/input"
 
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui/components/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@workspace/ui/components/select"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@workspace/ui/components/accordion";
+} from "@workspace/ui/components/accordion"
 
-type ResolutionOption = string;
+type ResolutionOption = string
 
 /**
  * MediaConfiguration Component
@@ -44,16 +51,16 @@ export default function MediaConfiguration() {
     isScreensLoading,
     isAudioInputsLoading,
     isResolutionsLoading,
-  } = useRecorderContext();
+  } = useRecorderContext()
 
   // Local state for UI feedback (refreshing, errors)
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [errors, setErrors] = useState<{
-    screens?: string;
-    audio?: string;
-    general?: string;
-  }>({});
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+    screens?: string
+    audio?: string
+    general?: string
+  }>({})
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null)
 
   /**
    * Enhanced refresh function
@@ -61,48 +68,48 @@ export default function MediaConfiguration() {
    * Includes error isolation for each operation.
    */
   const refreshDevices = useCallback(async () => {
-    setIsRefreshing(true);
-    setErrors({});
+    setIsRefreshing(true)
+    setErrors({})
 
     try {
       await Promise.all([
         getScreens().catch((error) => {
-          logger.error("Failed to get screens", error);
+          logger.error("Failed to get screens", error)
           setErrors((prev) => ({
             ...prev,
             screens: "Failed to load screen sources",
-          }));
+          }))
         }),
         getAudioInputs().catch((error) => {
-          logger.error("Failed to get audio inputs", error);
+          logger.error("Failed to get audio inputs", error)
           setErrors((prev) => ({
             ...prev,
             audio: "Failed to load audio devices",
-          }));
+          }))
         }),
         getSupportedResolutions().catch((error) => {
-          logger.error("Failed to get supported resolutions", error);
+          logger.error("Failed to get supported resolutions", error)
           setErrors((prev) => ({
             ...prev,
             general: "Failed to load supported resolutions",
-          }));
+          }))
         }),
-      ]);
+      ])
 
-      setLastRefreshTime(new Date());
+      setLastRefreshTime(new Date())
     } catch (error) {
-      logger.error("Refresh failed", error);
-      setErrors((prev) => ({ ...prev, general: "Failed to refresh devices" }));
+      logger.error("Refresh failed", error)
+      setErrors((prev) => ({ ...prev, general: "Failed to refresh devices" }))
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshing(false)
     }
-  }, [getScreens, getAudioInputs, getSupportedResolutions]);
+  }, [getScreens, getAudioInputs, getSupportedResolutions])
 
   // Effect: Initialization load on component mount
   useEffect(() => {
-    refreshDevices();
-    getSupportedResolutions();
-  }, [refreshDevices, getSupportedResolutions]);
+    refreshDevices()
+    getSupportedResolutions()
+  }, [refreshDevices, getSupportedResolutions])
 
   // Effect: Load persisted settings from settings.json on mount
   useEffect(() => {
@@ -112,20 +119,20 @@ export default function MediaConfiguration() {
           ...prev,
           ...savedSettings,
           isStreamingEnabled: false, // Ensure live stream is always false on startup (per user request)
-        }));
+        }))
       }
-    });
-  }, [setSettings]);
+    })
+  }, [setSettings])
 
   // Effect: Set a default Screen Source if none is selected
   useEffect(() => {
     if (screens.length > 0 && !settings.screenId) {
-      const defaultScreen = screens.find((screen) => screen.id) || screens[0];
+      const defaultScreen = screens.find((screen) => screen.id) || screens[0]
       if (defaultScreen) {
-        setSettings((prev) => ({ ...prev, screenId: defaultScreen.id }));
+        setSettings((prev) => ({ ...prev, screenId: defaultScreen.id }))
       }
     }
-  }, [screens, settings.screenId, setSettings]);
+  }, [screens, settings.screenId, setSettings])
 
   // Effect: Synchronize settings with the dedicated "Studio" floating window via IPC
   useEffect(() => {
@@ -136,71 +143,71 @@ export default function MediaConfiguration() {
       settings.fps ||
       settings.isStreamingEnabled
     ) {
-      logger.debug("Sending settings to studio", { settings });
-      window.ipcRenderer.send("settings-changed", settings);
+      logger.debug("Sending settings to studio", { settings })
+      window.ipcRenderer.send("settings-changed", settings)
     }
-  }, [settings]);
+  }, [settings])
 
   // Effect: Set a default Audio Source if none is selected
   useEffect(() => {
     if (audioInputs.length > 0 && !settings.audioInputId) {
       const defaultAudio =
-        audioInputs.find((audio) => audio.deviceId) || audioInputs[0];
+        audioInputs.find((audio) => audio.deviceId) || audioInputs[0]
       if (defaultAudio) {
         setSettings((prev) => ({
           ...prev,
           audioInputId: defaultAudio.deviceId,
-        }));
+        }))
       }
     }
-  }, [audioInputs, settings.audioInputId, setSettings]);
+  }, [audioInputs, settings.audioInputId, setSettings])
 
   // Effect: Set a default Resolution (preferring 720p for standard quality)
   useEffect(() => {
     if (resolutions.length > 0 && !settings.resolution) {
       // Default to 720p for better performance
       const defaultResolution =
-        resolutions.find((r) => r.includes("720p")) || resolutions[0];
-      setSettings((prev) => ({ ...prev, resolution: defaultResolution }));
+        resolutions.find((r) => r.includes("720p")) || resolutions[0]
+      setSettings((prev) => ({ ...prev, resolution: defaultResolution }))
     }
-  }, [resolutions, settings.resolution, setSettings]);
+  }, [resolutions, settings.resolution, setSettings])
 
   // Effect: Set a default frame rate (60 FPS for smoothness)
   useEffect(() => {
     if (!settings.fps) {
       // Default to 60 FPS for smoother video
-      setSettings((prev) => ({ ...prev, fps: 60 }));
+      setSettings((prev) => ({ ...prev, fps: 60 }))
     }
-  }, [settings.fps, setSettings]);
+  }, [settings.fps, setSettings])
 
   /**
    * Validation logic to check if currently selected devices are still present in lists
    */
   const isScreenValid = screens.some(
     (screen) => screen.id === settings.screenId
-  );
+  )
   const isAudioValid = audioInputs.some(
     (audio) => audio.deviceId === settings.audioInputId
-  );
+  )
   const isResolutionValid = resolutions.includes(
     settings.resolution as ResolutionOption
-  );
+  )
 
   /**
    * Truncates long device names for UI layout stability
    */
   const formatDeviceName = (name: string, maxLength: number = 40) => {
-    if (name.length <= maxLength) return name;
-    return name.slice(0, maxLength - 3) + "...";
-  };
+    if (name.length <= maxLength) return name
+    return name.slice(0, maxLength - 3) + "..."
+  }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* App Header section */}
       <Header />
-      
+
       {/* Scrollable content area with hidden scrollbar */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide px-4 py-2 non-draggable">
+      <div className="scrollbar-hide non-draggable flex-1 overflow-y-auto px-4 py-2">
         {/* Error Alerts Display */}
         {errors.general && (
           <Alert variant="destructive" className="mb-4">
@@ -210,7 +217,7 @@ export default function MediaConfiguration() {
         )}
 
         {/* Refresh Header with manual refresh button */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Media Sources</span>
             {lastRefreshTime && (
@@ -354,7 +361,7 @@ export default function MediaConfiguration() {
 
           {/* Visual Preview Section (Thumbnail of selected screen) */}
           <div className="pt-2">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <Monitor className="size-4 opacity-70" />
               <span className="text-xs">Preview</span>
             </div>
@@ -364,7 +371,7 @@ export default function MediaConfiguration() {
           {/* Advanced Accordion Section */}
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="advanced" className="border-none">
-              <AccordionTrigger className="hover:no-underline py-2">
+              <AccordionTrigger className="py-2 hover:no-underline">
                 <span className="text-sm font-semibold">Advanced Settings</span>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -397,7 +404,7 @@ export default function MediaConfiguration() {
                     }
                     disabled={isResolutionsLoading}
                   >
-                    <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectTrigger className="h-8 w-full text-xs">
                       <SelectValue
                         placeholder={
                           isResolutionsLoading
@@ -424,7 +431,9 @@ export default function MediaConfiguration() {
                 {/* Section 4: Frame Rate (FPS) Selection */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium">Frame Rate (FPS)</label>
+                    <label className="text-xs font-medium">
+                      Frame Rate (FPS)
+                    </label>
                     {settings.fps && (
                       <CheckCircle className="h-3 w-3 text-green-500" />
                     )}
@@ -433,17 +442,22 @@ export default function MediaConfiguration() {
                   <Select
                     value={settings.fps?.toString() || ""}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({ ...prev, fps: parseInt(value, 10) }))
+                      setSettings((prev) => ({
+                        ...prev,
+                        fps: parseInt(value, 10),
+                      }))
                     }
                   >
-                    <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectTrigger className="h-8 w-full text-xs">
                       <SelectValue placeholder="Select FPS" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="24">24 FPS (Cinematic)</SelectItem>
                       <SelectItem value="30">30 FPS (Standard)</SelectItem>
                       <SelectItem value="60">60 FPS (Smooth)</SelectItem>
-                      <SelectItem value="120">120 FPS (Ultra Smooth)</SelectItem>
+                      <SelectItem value="120">
+                        120 FPS (Ultra Smooth)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -453,50 +467,74 @@ export default function MediaConfiguration() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Cloud className="h-4 w-4 text-primary" />
-                      <label className="text-xs font-medium">Upload to Cloud</label>
+                      <label className="text-xs font-medium">
+                        Upload to Cloud
+                      </label>
                     </div>
                     <Switch
                       id="cloud-upload-switch"
                       checked={settings.isCloudUploadEnabled}
                       onCheckedChange={(checked) =>
-                        setSettings((prev) => ({ ...prev, isCloudUploadEnabled: checked }))
+                        setSettings((prev) => ({
+                          ...prev,
+                          isCloudUploadEnabled: checked,
+                        }))
                       }
                     />
                   </div>
                 </div>
 
                 {/* Section 5: Live Streaming Configuration (YouTube RTMP) */}
-                <div className="space-y-4 pt-2 border-t border-border">
+                <div className="space-y-4 border-t border-border pt-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Video className="h-4 w-4 text-red-600" />
-                      <label className="text-xs font-medium">Live Stream (YouTube)</label>
+                      <label className="text-xs font-medium">
+                        Live Stream (YouTube)
+                      </label>
                     </div>
                     <Switch
                       checked={settings.isStreamingEnabled}
                       onCheckedChange={(checked) =>
-                        setSettings((prev) => ({ ...prev, isStreamingEnabled: checked }))
+                        setSettings((prev) => ({
+                          ...prev,
+                          isStreamingEnabled: checked,
+                        }))
                       }
                     />
                   </div>
 
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-muted-foreground ml-1">RTMP URL</label>
+                      <label className="ml-1 text-[10px] font-bold text-muted-foreground">
+                        RTMP URL
+                      </label>
                       <Input
                         placeholder="rtmp://a.rtmp.youtube.com/live2"
                         value={settings.rtmpUrl}
-                        onChange={(e) => setSettings(prev => ({ ...prev, rtmpUrl: e.target.value }))}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            rtmpUrl: e.target.value,
+                          }))
+                        }
                         className="h-8 text-xs"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-muted-foreground ml-1">Stream Key</label>
+                      <label className="ml-1 text-[10px] font-bold text-muted-foreground">
+                        Stream Key
+                      </label>
                       <Input
                         type="password"
                         placeholder="Enter your stream key"
                         value={settings.streamKey}
-                        onChange={(e) => setSettings(prev => ({ ...prev, streamKey: e.target.value }))}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            streamKey: e.target.value,
+                          }))
+                        }
                         className="h-8 text-xs"
                       />
                     </div>
@@ -510,14 +548,20 @@ export default function MediaConfiguration() {
           <div className="pt-2 pb-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  isScreenValid && isAudioValid && isResolutionValid && settings.fps
+                className={`h-2 w-2 rounded-full ${
+                  isScreenValid &&
+                  isAudioValid &&
+                  isResolutionValid &&
+                  settings.fps
                     ? "bg-green-500"
                     : "bg-yellow-500"
                 }`}
               />
               <span>
-                {isScreenValid && isAudioValid && isResolutionValid && settings.fps
+                {isScreenValid &&
+                isAudioValid &&
+                isResolutionValid &&
+                settings.fps
                   ? "Configuration complete"
                   : "Configuration incomplete"}
               </span>
@@ -526,5 +570,5 @@ export default function MediaConfiguration() {
         </div>
       </div>
     </div>
-  );
+  )
 }

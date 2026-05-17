@@ -1,21 +1,21 @@
-import { useEffect } from "react";
-import AuthButton from "./components/AuthButton";
-import ControlLayout from "./components/ControlLayout";
-import LoadingSkeleton from "./components/LoadingSkeleton";
-import MediaConfiguration from "./components/MediaConfiguration";
-import { useRecorderContext } from "./context";
+import { useEffect } from "react"
+import AuthButton from "./components/AuthButton"
+import ControlLayout from "./components/ControlLayout"
+import LoadingSkeleton from "./components/LoadingSkeleton"
+import MediaConfiguration from "./components/MediaConfiguration"
+import { useRecorderContext } from "./context"
 
 export default function App() {
   // Get user state from global context
-  const { user, isUserLoading } = useRecorderContext();
+  const { user, isUserLoading } = useRecorderContext()
 
   // Effect: Automatically open the simplified Studio recording controls
   // once the user is successfully logged in and loaded.
   useEffect(() => {
     if (!isUserLoading && user) {
-      window.ipcRenderer.send("open-studio");
+      window.ipcRenderer.send("open-studio")
     }
-  }, [isUserLoading, user]);
+  }, [isUserLoading, user])
 
   // Loading state
   if (isUserLoading) {
@@ -25,7 +25,7 @@ export default function App() {
           <LoadingSkeleton />
         </ControlLayout>
       </div>
-    );
+    )
   }
 
   // Main Render:
@@ -37,5 +37,5 @@ export default function App() {
         {user ? <MediaConfiguration /> : <AuthButton />}
       </ControlLayout>
     </div>
-  );
+  )
 }

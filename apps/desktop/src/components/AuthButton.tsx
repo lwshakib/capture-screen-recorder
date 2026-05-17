@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { Button } from "@workspace/ui/components/button";
-import { env } from "@/lib/env";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react"
+import { Button } from "@workspace/ui/components/button"
+import { env } from "@/lib/env"
+import { Loader2 } from "lucide-react"
 
 /**
  * AuthButton Component
@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
  */
 export default function AuthButton() {
   // Local state to manage loading status during the login process
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
 
   // Effect to listen for auth-token events from the main process (Deep Linking)
   useEffect(() => {
@@ -17,20 +17,20 @@ export default function AuthButton() {
       _event: Electron.IpcRendererEvent,
       ...args: unknown[]
     ) => {
-      const newToken = args[0] as string;
+      const newToken = args[0] as string
       // Update local storage with the new token received from the deep link
-      await window.ipcRenderer.invoke("save-token", newToken);
+      await window.ipcRenderer.invoke("save-token", newToken)
       // Force a reload or update state to reflect the new token
-      window.location.reload();
-    };
+      window.location.reload()
+    }
     // Attach listener to 'auth-token' channel
-    window.ipcRenderer.on("auth-token", handleAuthToken);
-    
+    window.ipcRenderer.on("auth-token", handleAuthToken)
+
     // Cleanup: remove listener on unmount
     return () => {
-      window.ipcRenderer.off("auth-token", handleAuthToken);
-    };
-  }, []);
+      window.ipcRenderer.off("auth-token", handleAuthToken)
+    }
+  }, [])
 
   /**
    * login function
@@ -38,23 +38,23 @@ export default function AuthButton() {
    */
   const login = () => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       // The URL to the web application's dedicated electron auth page
-      const authUrl = `${env.VITE_WEB_URL}/desktop`;
-      
+      const authUrl = `${env.VITE_WEB_URL}/desktop`
+
       // Instruct main process to open the URL in the system browser
-      window.ipcRenderer.send("login", authUrl);
+      window.ipcRenderer.send("login", authUrl)
     } catch (error) {
-      console.error("Login redirect failed", error);
+      console.error("Login redirect failed", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     // 'draggable' class allows the window to be moved by clicking this area
-    <div className="h-full flex flex-col items-center justify-center p-6 draggable">
-      <div className="w-full max-w-sm flex justify-center">
+    <div className="draggable flex h-full flex-col items-center justify-center p-6">
+      <div className="flex w-full max-w-sm justify-center">
         {/* 'non-draggable' is required for interactive elements like buttons */}
         <Button
           variant="default"
@@ -74,5 +74,5 @@ export default function AuthButton() {
         </Button>
       </div>
     </div>
-  );
+  )
 }

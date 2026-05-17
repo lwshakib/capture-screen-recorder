@@ -1,18 +1,24 @@
-import { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { logger } from "../lib/logger";
+import { Component, ErrorInfo, ReactNode } from "react"
+import { AlertTriangle } from "lucide-react"
+import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { logger } from "../lib/logger"
 
 interface Props {
-  children: ReactNode; // Sub-components to be monitored for errors
-  fallback?: ReactNode; // Optional custom UI to show when an error occurs
-  onError?: (error: Error, errorInfo: ErrorInfo) => void; // Optional callback for external error tracking
+  children: ReactNode // Sub-components to be monitored for errors
+  fallback?: ReactNode // Optional custom UI to show when an error occurs
+  onError?: (error: Error, errorInfo: ErrorInfo) => void // Optional callback for external error tracking
 }
 
 interface State {
-  hasError: boolean; // Flag indicating if a child component has crashed
-  error: Error | null; // The actual error object
+  hasError: boolean // Flag indicating if a child component has crashed
+  error: Error | null // The actual error object
 }
 
 /**
@@ -22,15 +28,15 @@ interface State {
  */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
+    super(props)
+    this.state = { hasError: false, error: null }
   }
 
   /**
    * Updates state so the next render will show the fallback UI.
    */
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error }
   }
 
   /**
@@ -39,11 +45,11 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     logger.error("ErrorBoundary caught an error", error, {
       componentStack: errorInfo.componentStack,
-    });
+    })
 
     // Notify parent listeners if provided
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      this.props.onError(error, errorInfo)
     }
   }
 
@@ -51,26 +57,26 @@ export class ErrorBoundary extends Component<Props, State> {
    * Clears the error state to allow the app to try rendering the children again.
    */
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null });
-  };
+    this.setState({ hasError: false, error: null })
+  }
 
   /**
    * Performs a hard refresh of the window
    */
   handleReload = (): void => {
-    window.location.reload();
-  };
+    window.location.reload()
+  }
 
   render(): ReactNode {
     if (this.state.hasError) {
       // Return custom fallback if provided via props
       if (this.props.fallback) {
-        return this.props.fallback;
+        return this.props.fallback
       }
 
       // Default Error UI: A centered card with options to reload or reset
       return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -85,15 +91,15 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Show technical details only during development for debugging */}
               {this.state.error && import.meta.env.DEV && (
                 <div className="rounded-md bg-muted p-3">
-                  <p className="text-sm font-mono text-muted-foreground">
+                  <p className="font-mono text-sm text-muted-foreground">
                     {this.state.error.message}
                   </p>
                   {this.state.error.stack && (
                     <details className="mt-2">
-                      <summary className="text-xs cursor-pointer text-muted-foreground">
+                      <summary className="cursor-pointer text-xs text-muted-foreground">
                         Stack trace
                       </summary>
-                      <pre className="text-xs mt-2 overflow-auto max-h-40">
+                      <pre className="mt-2 max-h-40 overflow-auto text-xs">
                         {this.state.error.stack}
                       </pre>
                     </details>
@@ -115,10 +121,10 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardContent>
           </Card>
         </div>
-      );
+      )
     }
 
     // Default: render normally
-    return this.props.children;
+    return this.props.children
   }
 }

@@ -1,7 +1,7 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react"
 
-import { useTheme } from "@/components/theme-provider";
-import { Button } from "@workspace/ui/components/button";
+import { useTheme } from "@/components/theme-provider"
+import { Button } from "@workspace/ui/components/button"
 
 /**
  * ModeToggle Component
@@ -9,14 +9,14 @@ import { Button } from "@workspace/ui/components/button";
  */
 export function ModeToggle() {
   // Use the theme context to get current theme and setter
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme()
 
   /**
    * Toggles the theme based on the current resolved theme
    */
   const toggleTheme = () => {
-    setTheme(resolvedTheme === "light" ? "dark" : "light");
-  };
+    setTheme(resolvedTheme === "light" ? "dark" : "light")
+  }
 
   return (
     <Button
@@ -34,5 +34,5 @@ export function ModeToggle() {
       {/* Visual accessibility label */}
       <span className="sr-only">Toggle theme</span>
     </Button>
-  );
+  )
 }

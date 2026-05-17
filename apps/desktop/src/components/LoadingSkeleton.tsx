@@ -1,4 +1,4 @@
-import { Skeleton } from "@workspace/ui/components/skeleton";
+import { Skeleton } from "@workspace/ui/components/skeleton"
 
 /**
  * LoadingSkeleton Component
@@ -8,14 +8,14 @@ export default function LoadingSkeleton() {
   return (
     <div className="h-full">
       {/* Header Skeleton structure: Avatar and Close icon */}
-      <div className="flex justify-between items-center p-5 draggable">
+      <div className="draggable flex items-center justify-between p-5">
         <span className="non-draggable">
           <div className="flex items-center gap-2">
-            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
           </div>
         </span>
-        <div className="flex items-center gap-2 non-draggable">
-          <Skeleton className="w-6 h-6" />
+        <div className="non-draggable flex items-center gap-2">
+          <Skeleton className="h-6 w-6" />
         </div>
       </div>
 
@@ -24,28 +24,28 @@ export default function LoadingSkeleton() {
         <div className="space-y-1">
           {/* Screen Selection field Placeholder */}
           <div className="space-y-2">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="w-full h-10 rounded-md" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
 
           {/* Audio Source Selection field Placeholder */}
           <div className="space-y-2">
-            <Skeleton className="w-28 h-4" />
-            <Skeleton className="w-full h-10 rounded-md" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
 
           {/* Resolution Selection field Placeholder */}
           <div className="space-y-2">
-            <Skeleton className="w-20 h-4" />
-            <Skeleton className="w-full h-10 rounded-md" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
         </div>
       </div>
 
       {/* Preview Section Placeholder: Large rectangle for video preview */}
-      <div className="pt-2 px-4">
-        <Skeleton className="w-full h-48 rounded-lg" />
+      <div className="px-4 pt-2">
+        <Skeleton className="h-48 w-full rounded-lg" />
       </div>
     </div>
-  );
+  )
 }
