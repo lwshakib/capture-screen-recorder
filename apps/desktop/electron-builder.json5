@@ -1,18 +1,20 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   $schema: "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  appId: "YourAppID",
+  appId: "com.capture.screenrecorder",
   asar: true,
-  productName: "YourAppName",
+  productName: "Capture Screen Recorder",
   directories: {
     output: "release/${version}",
   },
   files: ["dist", "dist-electron"],
   mac: {
+    icon: "public/icons/mac/icon.icns",
     target: ["dmg"],
     artifactName: "${productName}-Mac-${version}-Installer.${ext}",
   },
   win: {
+    icon: "public/icons/win/icon.ico",
     target: [
       {
         target: "nsis",
@@ -28,6 +30,7 @@
     deleteAppDataOnUninstall: false,
   },
   linux: {
+    icon: "public/icons/png",
     target: ["AppImage"],
     artifactName: "${productName}-Linux-${version}.${ext}",
   },
