@@ -20,11 +20,6 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
-  // Standard email/password credentials
-  emailAndPassword: {
-    enabled: true,
-  },
-
   // OAuth providers for third-party login
   socialProviders: {
     google: {
