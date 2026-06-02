@@ -1,4 +1,8 @@
-import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
+import axios, {
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from "axios"
 import { env } from "./env"
 import { logger } from "./logger"
 
@@ -12,19 +16,21 @@ export const httpClient = axios.create({
 })
 
 // Auth Interceptor: Automatically inject the Bearer token from the local file system
-httpClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  try {
-    const token = await window.ipcRenderer.invoke("get-token")
-    if (token && typeof token === "string") {
-      // Remove wrapping quotes if present from JSON.stringify/parse
-      const cleanToken = token.replace(/^["']+|["']+$/g, "")
-      config.headers.Authorization = `Bearer ${cleanToken}`
+httpClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    try {
+      const token = await window.ipcRenderer.invoke("get-token")
+      if (token && typeof token === "string") {
+        // Remove wrapping quotes if present from JSON.stringify/parse
+        const cleanToken = token.replace(/^["']+|["']+$/g, "")
+        config.headers.Authorization = `Bearer ${cleanToken}`
+      }
+    } catch (error) {
+      logger.error("Failed to inject auth token", error)
     }
-  } catch (error) {
-    logger.error("Failed to inject auth token", error)
+    return config
   }
-  return config
-})
+)
 
 // Request Interceptor: Logs every outgoing HTTP request for debugging
 httpClient.interceptors.request.use(
