@@ -71,9 +71,7 @@ type RecorderState = {
   // Active Settings (Shared across windows)
   settings: Settings
   // Updater for settings with support for functional updates
-  setSettings: (
-    settings: Settings | ((prev: Settings) => Settings)
-  ) => void
+  setSettings: (settings: Settings | ((prev: Settings) => Settings)) => void
 }
 
 /**
@@ -221,9 +219,7 @@ export const useRecorderContext = create<RecorderState>()((set) => ({
   },
 
   // Updates settings, supporting both direct objects and functional updates
-  setSettings: (
-    settings: Settings | ((prev: Settings) => Settings)
-  ) =>
+  setSettings: (settings: Settings | ((prev: Settings) => Settings)) =>
     set((state: RecorderState) => ({
       settings:
         typeof settings === "function" ? settings(state.settings) : settings,

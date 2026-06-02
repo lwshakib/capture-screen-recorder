@@ -18,6 +18,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "key is required" }, { status: 400 })
     }
 
+    if (!key.startsWith(`recordings/${session.user.id}/`)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const url = await getDownloadSignedUrl(key)
 
     return NextResponse.json({ url })

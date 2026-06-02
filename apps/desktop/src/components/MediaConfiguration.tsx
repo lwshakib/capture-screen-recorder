@@ -134,7 +134,10 @@ export default function MediaConfiguration() {
         screens.find((screen: Electron.DesktopCapturerSource) => screen.id) ||
         screens[0]
       if (defaultScreen) {
-        setSettings((prev: Settings) => ({ ...prev, screenId: defaultScreen.id }))
+        setSettings((prev: Settings) => ({
+          ...prev,
+          screenId: defaultScreen.id,
+        }))
       }
     }
   }, [screens, settings.screenId, setSettings])
@@ -175,7 +178,10 @@ export default function MediaConfiguration() {
       const defaultResolution =
         resolutions.find((r: ResolutionOption) => r.includes("720p")) ||
         resolutions[0]
-      setSettings((prev: Settings) => ({ ...prev, resolution: defaultResolution }))
+      setSettings((prev: Settings) => ({
+        ...prev,
+        resolution: defaultResolution,
+      }))
     }
   }, [resolutions, settings.resolution, setSettings])
 
@@ -330,7 +336,10 @@ export default function MediaConfiguration() {
             <Select
               value={settings.audioInputId || ""}
               onValueChange={(value) =>
-                setSettings((prev: Settings) => ({ ...prev, audioInputId: value }))
+                setSettings((prev: Settings) => ({
+                  ...prev,
+                  audioInputId: value,
+                }))
               }
               disabled={isAudioInputsLoading}
             >
