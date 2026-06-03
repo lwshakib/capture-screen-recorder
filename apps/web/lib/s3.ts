@@ -29,8 +29,10 @@ export async function getUploadPresignedUrl(
   const sanitizedFileName = fileName
     .replace(/[/\?%*:|"<>]/g, "-")
     .replace(/\.\./g, "-")
-  const key = `recordings/${userId}/${nanoid()}-${sanitizedFileName}`
+    .replace(/\//g, "-")
+    .replace(new RegExp("\\", "g"), "-")
 
+  const key = `recordings/${userId}/${nanoid()}-${sanitizedFileName}`
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
