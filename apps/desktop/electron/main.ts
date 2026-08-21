@@ -95,6 +95,108 @@ interface StreamConfig {
 let ffmpegCommand: FfmpegCommand | null = null
 let inputStream: Readable | null = null
 
+/**
+ * Validates a StreamConfig object received over IPC before it is used to
+ * construct an FFmpeg command. This prevents:
+ *
+ *  - Stream redirection: ensures `rtmpUrl` uses the rtmp:// or rtmps:// protocol
+ *    exclusively, blocking attempts to redirect video to file://, http://, or
+ *    attacker-controlled endpoints.
+ *
+ *  - Argument injection via `streamKey`: only alphanumeric characters, hyphens,
+ *    and underscores are allowed — preventing shell-like separators or FFmpeg
+ *    flag sequences from being embedded in the output URL path.
+ *
+ *  - Numeric field abuse: `fps`, `videoBitrate`, and `audioBitrate` are
+ *    validated against safe ranges / patterns so they cannot carry extra flags
+ *    when interpolated into FFmpeg output options.
+ *
+ *  - Malformed resolution strings that could produce invalid `-s` arguments.
+ *
+ * @returns An object describing whether validation passed and, if not, why.
+ */
+function validateStreamConfig(config: StreamConfig): {
+  valid: boolean
+  reason?: string
+} {
+  // --- rtmpUrl: must be a well-formed rtmp:// or rtmps:// URL ---
+  if (typeof config.rtmpUrl !== "string" || config.rtmpUrl.trim() === "") {
+    return { valid: false, reason: "rtmpUrl must be a non-empty string" }
+  }
+  try {
+    const parsed = new URL(config.rtmpUrl)
+    if (parsed.protocol !== "rtmp:" && parsed.protocol !== "rtmps:") {
+      return {
+        valid: false,
+        reason: `rtmpUrl protocol must be rtmp:// or rtmps://, got '${parsed.protocol}'`,
+      }
+    }
+  } catch {
+    return { valid: false, reason: "rtmpUrl is not a valid URL" }
+  }
+
+  // --- streamKey: only safe characters, no shell separators or flag sequences ---
+  if (typeof config.streamKey !== "string" || config.streamKey.trim() === "") {
+    return { valid: false, reason: "streamKey must be a non-empty string" }
+  }
+  // Allow alphanumeric characters, hyphens, and underscores only
+  if (!/^[a-zA-Z0-9_-]{1,512}$/.test(config.streamKey)) {
+    return {
+      valid: false,
+      reason:
+        "streamKey contains invalid characters; only alphanumeric, hyphens, and underscores are allowed",
+    }
+  }
+
+  // --- fps: must be a positive integer in a sane live-streaming range (1–120) ---
+  if (
+    typeof config.fps !== "number" ||
+    !Number.isInteger(config.fps) ||
+    config.fps < 1 ||
+    config.fps > 120
+  ) {
+    return { valid: false, reason: "fps must be an integer between 1 and 120" }
+  }
+
+  // --- resolution: must match the WxH pattern with reasonable dimension bounds ---
+  if (typeof config.resolution !== "string" || !/^\d+x\d+$/.test(config.resolution)) {
+    return {
+      valid: false,
+      reason: "resolution must be in the format WIDTHxHEIGHT (e.g., 1920x1080)",
+    }
+  }
+  const [resWidth, resHeight] = config.resolution.split("x").map(Number)
+  if (resWidth < 1 || resWidth > 7680 || resHeight < 1 || resHeight > 4320) {
+    return {
+      valid: false,
+      reason: "resolution dimensions are out of the allowed range (1x1 – 7680x4320)",
+    }
+  }
+
+  // --- videoBitrate / audioBitrate: must match the Nk pattern (e.g., "2500k") ---
+  const bitratePattern = /^\d{1,6}k$/
+  if (
+    typeof config.videoBitrate !== "string" ||
+    !bitratePattern.test(config.videoBitrate)
+  ) {
+    return {
+      valid: false,
+      reason: "videoBitrate must be a numeric kilobit value (e.g., '2500k')",
+    }
+  }
+  if (
+    typeof config.audioBitrate !== "string" ||
+    !bitratePattern.test(config.audioBitrate)
+  ) {
+    return {
+      valid: false,
+      reason: "audioBitrate must be a numeric kilobit value (e.g., '128k')",
+    }
+  }
+
+  return { valid: true }
+}
+
 // Helper to get the correct icon path based on platform
 const getIconPath = () => {
   const iconExt = process.platform === "win32" ? "ico" : "png"
@@ -777,7 +879,27 @@ ipcMain.on("minimize-upload-window", () => {
 // Live Streaming IPC Handlers
 // IPC Handler: Start Live Streaming via FFmpeg
 ipcMain.on("streaming:start", (event, config: StreamConfig) => {
-  console.log("Starting live stream with config:", config)
+  // Validate all user-controlled config fields before touching FFmpeg.
+  // This prevents stream redirection and argument injection via rtmpUrl / streamKey.
+  const validation = validateStreamConfig(config)
+  if (!validation.valid) {
+    console.error(
+      `[SECURITY] Rejected streaming:start — invalid config: ${validation.reason}`,
+      { rtmpUrl: config?.rtmpUrl, reason: validation.reason }
+    )
+    event.reply("streaming:error", {
+      error: `Invalid stream configuration: ${validation.reason}`,
+    })
+    return
+  }
+
+  console.log("Starting live stream with config:", {
+    rtmpUrl: config.rtmpUrl,
+    fps: config.fps,
+    resolution: config.resolution,
+    hasAudio: config.hasAudio,
+    // streamKey intentionally omitted from logs to avoid credential leakage
+  })
 
   // Stop any existing stream before starting a new one
   if (ffmpegCommand) {
