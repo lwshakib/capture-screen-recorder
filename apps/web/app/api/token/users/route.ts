@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 
@@ -45,7 +46,9 @@ export async function GET() {
       { headers: corsHeaders }
     )
   } catch (error) {
-    console.error("Error in /api/token/users:", error)
+    logger.error("Unhandled error in GET /api/token/users", error, {
+      endpoint: "GET /api/token/users",
+    })
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500, headers: corsHeaders }
