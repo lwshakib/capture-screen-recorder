@@ -6,10 +6,11 @@
 
 /**
  * Maximum allowed size (in bytes) for a recording data payload received over IPC.
- * Recordings are video buffers; anything beyond this threshold is considered anomalous
- * and likely malicious or erroneous. Set to 2 GB as a generous upper bound.
+ * Recording data is sent as chunked buffers, not full session dumps, so 100 MB is
+ * a practical and security-conscious upper bound. Payloads exceeding this are
+ * considered anomalous and likely malicious or the result of a faulty process.
  */
-const MAX_RECORDING_BYTES = 2 * 1024 * 1024 * 1024 // 2 GB
+const MAX_RECORDING_BYTES = 100 * 1024 * 1024 // 100 MB
 
 /**
  * Checks if a value is a valid HTTP/HTTPS URL.
