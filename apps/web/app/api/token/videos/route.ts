@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 import prisma from "@/lib/prisma"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
@@ -69,7 +70,11 @@ export async function POST(req: Request) {
       },
     })
 
-    console.log(`Video created: ${video.id} for user: ${session.user.email}`)
+    logger.info("Video registered successfully", {
+      videoId: video.id,
+      userId: session.user.email,
+      endpoint: "POST /api/token/videos",
+    })
 
     // 5. Return success with the video ID and a redirect URL for the desktop app
     return NextResponse.json(
@@ -82,7 +87,9 @@ export async function POST(req: Request) {
       { headers: corsHeaders }
     )
   } catch (error) {
-    console.error("Error in POST /api/token/videos:", error)
+    logger.error("Unhandled error in POST /api/token/videos", error, {
+      endpoint: "POST /api/token/videos",
+    })
     return NextResponse.json(
       { error: "Failed to process video metadata." },
       { status: 500, headers: corsHeaders }
