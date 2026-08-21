@@ -46,6 +46,13 @@ const UPLOAD_WINDOW_HEIGHT = 200
  */
 const MAX_RECORDING_PAYLOAD_BYTES = 100 * 1024 * 1024 // 100 MB
 
+/**
+ * Maximum allowed byte length for an individual live-streaming data chunk arriving over IPC.
+ * Streaming chunks are sent continuously (typically ~100 KB - 2 MB per second).
+ * Chunks exceeding 10 MB are rejected to prevent memory exhaustion and DoS attacks on the main process.
+ */
+const MAX_STREAMING_CHUNK_BYTES = 10 * 1024 * 1024 // 10 MB
+
 // The built directory structure
 //
 // ├─┬─┬ dist
@@ -1025,14 +1032,34 @@ ipcMain.on("streaming:start", (event, config: StreamConfig) => {
 })
 
 // IPC Handler: Receive streaming data chunks from Renderer
-ipcMain.on("streaming:data", (_, data: ArrayBuffer) => {
-  if (inputStream) {
-    try {
-      // Push the data chunk into the FFmpeg input stream
-      inputStream.push(Buffer.from(data))
-    } catch (error) {
-      console.error("Error pushing data to FFmpeg:", error)
-    }
+ipcMain.on("streaming:data", (_, data: ArrayBuffer | Buffer) => {
+  if (!inputStream) {
+    return
+  }
+
+  // 1. Type validation: ensure data is a valid ArrayBuffer or Buffer
+  if (!data || (!(data instanceof ArrayBuffer) && !Buffer.isBuffer(data) && !ArrayBuffer.isView(data))) {
+    console.warn("[SECURITY] Rejected streaming:data payload: Invalid data format (not an ArrayBuffer/Buffer).")
+    return
+  }
+
+  // 2. Size validation: check chunk byteLength against MAX_STREAMING_CHUNK_BYTES threshold
+  const chunkByteLength = data instanceof ArrayBuffer ? data.byteLength : data.length
+  if (chunkByteLength > MAX_STREAMING_CHUNK_BYTES) {
+    console.error(
+      `[SECURITY] Rejected oversized streaming data chunk: ` +
+        `${chunkByteLength} bytes exceeds maximum allowed threshold of ${MAX_STREAMING_CHUNK_BYTES} bytes. ` +
+        `Possible denial-of-service attempt.`
+    )
+    return
+  }
+
+  try {
+    // Convert to Buffer and push into FFmpeg input stream
+    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer)
+    inputStream.push(buffer)
+  } catch (error) {
+    console.error("Error pushing streaming data to FFmpeg:", error)
   }
 })
 
