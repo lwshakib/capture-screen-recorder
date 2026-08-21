@@ -5,6 +5,13 @@
  */
 
 /**
+ * Maximum allowed size (in bytes) for a recording data payload received over IPC.
+ * Recordings are video buffers; anything beyond this threshold is considered anomalous
+ * and likely malicious or erroneous. Set to 2 GB as a generous upper bound.
+ */
+const MAX_RECORDING_BYTES = 2 * 1024 * 1024 * 1024 // 2 GB
+
+/**
  * Checks if a value is a valid HTTP/HTTPS URL.
  * Used to filter malicious links before opening them with the system shell.
  */
@@ -24,7 +31,9 @@ export function isValidUrl(url: unknown): url is string {
 
 /**
  * Validates the structure of recording data blobs being saved to disk.
- * Ensures data is a byte array and filename is a non-empty string.
+ * Ensures data is a byte array, filename is a non-empty string, and the
+ * payload does not exceed MAX_RECORDING_BYTES to guard against memory
+ * exhaustion / denial-of-service via oversized IPC messages.
  */
 export function isValidRecordingData(data: unknown): data is {
   data: number[]
@@ -36,8 +45,22 @@ export function isValidRecordingData(data: unknown): data is {
 
   const record = data as Record<string, unknown>
 
+  if (!Array.isArray(record.data)) {
+    return false
+  }
+
+  // Guard against oversized payloads that could exhaust process memory.
+  // Each element represents one byte, so the element count equals the byte size.
+  if (record.data.length > MAX_RECORDING_BYTES) {
+    console.warn(
+      `[SECURITY] Blocked oversized IPC recording payload: ` +
+        `${record.data.length} bytes exceeds the maximum allowed size of ` +
+        `${MAX_RECORDING_BYTES} bytes. Possible denial-of-service attempt.`
+    )
+    return false
+  }
+
   return (
-    Array.isArray(record.data) &&
     record.data.every((item) => typeof item === "number") &&
     typeof record.filename === "string" &&
     record.filename.length > 0
