@@ -37,6 +37,15 @@ const WEBCAM_WINDOW_SIZE = 220
 const UPLOAD_WINDOW_WIDTH = 500
 const UPLOAD_WINDOW_HEIGHT = 200
 
+/**
+ * Maximum allowed byte length for a recording data payload arriving over IPC.
+ * Each element of the `data` number[] represents one byte, so its length equals
+ * the raw byte size. Payloads that exceed this threshold are rejected immediately
+ * to prevent memory exhaustion and IPC blocking in the main process.
+ * Mirrors the limit enforced by isValidRecordingData() in the renderer-side validator.
+ */
+const MAX_RECORDING_PAYLOAD_BYTES = 100 * 1024 * 1024 // 100 MB
+
 // The built directory structure
 //
 // ├─┬─┬ dist
@@ -655,6 +664,19 @@ ipcMain.on(
     _,
     data: { data: number[]; filename: string; isCloudUploadEnabled?: boolean }
   ) => {
+    // Fail-fast: reject oversized payloads before touching any data to prevent
+    // memory exhaustion and IPC channel blocking (DoS via main process).
+    if (!Array.isArray(data?.data) || data.data.length > MAX_RECORDING_PAYLOAD_BYTES) {
+      console.error(
+        `[SECURITY] Rejected save-recording payload: ` +
+          `data length ${
+            Array.isArray(data?.data) ? data.data.length : "(not an array)"
+          } exceeds the maximum allowed size of ${MAX_RECORDING_PAYLOAD_BYTES} bytes. ` +
+          `Possible denial-of-service attempt or faulty renderer process.`
+      )
+      return
+    }
+
     console.log("Received save-recording request:", {
       filename: data.filename,
       dataLength: data.data.length,
